@@ -9,6 +9,7 @@ import os
 
 DEFAULT_MQTT_BROKER_ADDRESS="192.168.1.2"
 DEFAULT_CLIENT_NAME="raspled"
+DEFAULT_MAX_MQTT_CONNECT_TRY=15
 DEFAULT_SPI_PORT=0
 DEFAULT_SPI_DEVICE=0
 DEFAULT_MAX_LEDS=160
@@ -295,28 +296,41 @@ GPIO.add_event_detect(channel_two, GPIO.RISING, callback=callback_two, bouncetim
 
 client = mqtt.Client(client_name)
 client.on_message=callback_on_message
-client.connect(mqtt_broker_address)
-client.subscribe(mqtt_topic_prefix+"get_status")
-client.subscribe(mqtt_topic_prefix+"output")
-client.subscribe(mqtt_topic_prefix+"pong/btn_delay")
-client.subscribe(mqtt_topic_prefix+"pong/init_delay")
-client.subscribe(mqtt_topic_prefix+"pong/min_delay")
-client.subscribe(mqtt_topic_prefix+"pong/dec_per_run")
-client.subscribe(mqtt_topic_prefix+"pong/num_leds")
-client.subscribe(mqtt_topic_prefix+"pong/max_wins")
-client.subscribe(mqtt_topic_prefix+"pong/result/delay/during")
-client.subscribe(mqtt_topic_prefix+"pong/result/delay/after")
-client.subscribe(mqtt_topic_prefix+"pong/result/color/r")
-client.subscribe(mqtt_topic_prefix+"pong/result/color/g")
-client.subscribe(mqtt_topic_prefix+"pong/result/color/b")
-client.subscribe(mqtt_topic_prefix+"pong/tolerance")
-client.subscribe(mqtt_topic_prefix+"pong/color/r")
-client.subscribe(mqtt_topic_prefix+"pong/color/g")
-client.subscribe(mqtt_topic_prefix+"pong/color/b")
-client.subscribe(mqtt_topic_prefix+"color/r")
-client.subscribe(mqtt_topic_prefix+"color/g")
-client.subscribe(mqtt_topic_prefix+"color/b")
-client.loop_start()
+print("Connecting to MQTT broker: %s" % mqtt_broker_address)
+connected = False
+connect_count = 0
+while not connected and (connect_count < DEFAULT_MAX_MQTT_CONNECT_TRY):
+    try:
+        client.connect(mqtt_broker_address)
+        client.subscribe(mqtt_topic_prefix+"get_status")
+        client.subscribe(mqtt_topic_prefix+"output")
+        client.subscribe(mqtt_topic_prefix+"pong/btn_delay")
+        client.subscribe(mqtt_topic_prefix+"pong/init_delay")
+        client.subscribe(mqtt_topic_prefix+"pong/min_delay")
+        client.subscribe(mqtt_topic_prefix+"pong/dec_per_run")
+        client.subscribe(mqtt_topic_prefix+"pong/num_leds")
+        client.subscribe(mqtt_topic_prefix+"pong/max_wins")
+        client.subscribe(mqtt_topic_prefix+"pong/result/delay/during")
+        client.subscribe(mqtt_topic_prefix+"pong/result/delay/after")
+        client.subscribe(mqtt_topic_prefix+"pong/result/color/r")
+        client.subscribe(mqtt_topic_prefix+"pong/result/color/g")
+        client.subscribe(mqtt_topic_prefix+"pong/result/color/b")
+        client.subscribe(mqtt_topic_prefix+"pong/tolerance")
+        client.subscribe(mqtt_topic_prefix+"pong/color/r")
+        client.subscribe(mqtt_topic_prefix+"pong/color/g")
+        client.subscribe(mqtt_topic_prefix+"pong/color/b")
+        client.subscribe(mqtt_topic_prefix+"color/r")
+        client.subscribe(mqtt_topic_prefix+"color/g")
+        client.subscribe(mqtt_topic_prefix+"color/b")
+        client.loop_start()
+        connected = True
+    except:
+        connect_count += 1
+        print("Connection attempt %d failed!" % connect_count)
+        time.sleep(1)
+
+if not connected:
+    print ("Could not connect to MQTT broker. Starting without MQTT support!")
 
 try:
   while True:

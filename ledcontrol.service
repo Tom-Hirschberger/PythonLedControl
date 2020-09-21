@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 User=pi
-EnvironmentFile=/home/pi/ledcontrol/ledcontrol.evn
+EnvironmentFile=/home/pi/ledcontrol/ledcontrol.env
 Type=simple
 ExecStart=/usr/bin/python3 /home/pi/ledcontrol/ledcontrol.py
 
