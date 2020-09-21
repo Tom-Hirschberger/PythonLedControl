@@ -83,6 +83,7 @@ pixels.show()
 client_name = os.getenv("MQTT_CLIENT_NAME", DEFAULT_CLIENT_NAME)
 mqtt_broker_address = os.getenv("MQTT_BROKER_ADDRESS", DEFAULT_MQTT_BROKER_ADDRESS)
 mqtt_topic_prefix = os.getenv("MQTT_TOPIC_PREFIX", client_name+"/")
+mqtt_max_connect_attempts = os.getenv("MQTT_MAX_CONNECT_ATTEMPTS", DEFAULT_MAX_MQTT_CONNECT_TRY)
 
 def callback_on_message(client, userdata, message):
     global mqtt_topic_prefix
@@ -398,10 +399,18 @@ try:
                 stripe_mode = 0
                 display_result(pong_wins_delay_after)
                 toggle_leds(False)
+                btn_two_state = False
+                btn_one_state = False
+                player_one_successfull_press = False
+                player_two_successfull_press = False
             else:
                 display_result(pong_wins_delay_during)
                 cur_pixel = 0
                 reverse_mode = False
+                btn_two_state = False
+                btn_one_state = False
+                player_one_successfull_press = False
+                player_two_successfull_press = False
                 cur_pong_delay = pong_init_delay
 
         if abort_run == False:
