@@ -6,6 +6,7 @@ import time
 import paho.mqtt.client as mqtt
 import json
 import os
+import pprint
 
 DEFAULT_MQTT_BROKER_ADDRESS="192.168.1.2"
 DEFAULT_CLIENT_NAME="raspled"
