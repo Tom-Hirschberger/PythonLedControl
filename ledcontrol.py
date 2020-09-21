@@ -36,6 +36,9 @@ DEFAULT_COLOR_R=255
 DEFAULT_COLOR_G=255
 DEFAULT_COLOR_B=255
 
+btn_one_gpio = os.getenv("LED_BTN_ONE_GPIO", DEFAULT_BTN_ONE_GPIO)
+btn_two_gpio = os.getenv("LED_BTN_TWO_GPIO", DEFAULT_BTN_TWO_GPIO)
+
 reverse_mode = False
 cur_pixel = 0
 btn_one_state = False
@@ -100,6 +103,12 @@ def callback_on_message(client, userdata, message):
             toggle_leds(True)
         else:
             toggle_leds(False)
+    elif message.topic == mqtt_topic_prefix+"config":
+        try:
+            new_config = json.loads(message_str)
+            apply_config(new_config)
+        except:
+            print("Received wrong config: %s" % message_str)
     elif message.topic == mqtt_topic_prefix+"pong/btn_delay":
         pong_btn_delay = int(message_str)
     elif message.topic == mqtt_topic_prefix+"pong/init_delay":
@@ -284,16 +293,42 @@ def display_result(cur_delay):
     pixels.show()
     time.sleep(cur_delay)
 
+def apply_config(new_config={}):
+    global pong_btn_delay, pong_init_delay, pong_min_delay, pong_dec_per_run
+    global num_pong_leds, pong_tolerance
+    global pong_max_wins, pong_wins_delay_after, pong_wins_delay_during
+    global pong_color_r, pong_color_g, pong_color_b, pong_result_color_r, pong_result_color_g, pong_result_color_b
+    global color_r, color_g, color_b
+
+    pong_options = new_config.get("pong", {})
+
+    pong_btn_delay = pong_options.get("btn_delay",pong_btn_delay)
+    pong_init_delay = pong_options.get("init_delay",pong_init_delay)
+    pong_min_delay = pong_options.get("min_delay",pong_min_delay)
+    pong_dec_per_run = pong_options.get("dec_per_run",pong_dec_per_run)
+    num_pong_leds = pong_options.get("num_leds",num_pong_leds)
+    pong_max_wins = pong_options.get("max_wins",pong_max_wins)
+    pong_tolerance = pong_options.get("tolerance",pong_tolerance)
+    pong_wins_delay_after = pong_options.get("result_delay_after",pong_wins_delay_after)
+    pong_wins_delay_during = pong_options.get("result_delay_during",pong_wins_delay_during)
+    pong_color_r = pong_options.get("color_r",pong_color_r)
+    pong_color_g = pong_options.get("color_g",pong_color_g)
+    pong_color_b = pong_options.get("color_b",pong_color_b)
+    pong_result_color_r = pong_options.get("result_color_r",pong_result_color_r)
+    pong_result_color_g = pong_options.get("result_color_g",pong_result_color_g)
+    pong_result_color_b = pong_options.get("result_color_b",pong_result_color_b)
+
+    color_r = new_config.get("color_r", color_r)
+    color_g = new_config.get("color_r", color_g)
+    color_b = new_config.get("color_r", color_b)
+
 GPIO.setmode(GPIO.BCM)
 
-GPIO.setup(17, GPIO.IN)
-GPIO.setup(27, GPIO.IN)
+GPIO.setup(btn_one_gpio, GPIO.IN)
+GPIO.setup(btn_two_gpio, GPIO.IN)
 
-channel_one = 17  # GPIO-Pin
-channel_two = 27  # GPIO-Pin
-
-GPIO.add_event_detect(channel_one, GPIO.RISING, callback=callback_one, bouncetime = DEFAULT_BTN_DEBOUNCE_DELAY)
-GPIO.add_event_detect(channel_two, GPIO.RISING, callback=callback_two, bouncetime = DEFAULT_BTN_DEBOUNCE_DELAY)
+GPIO.add_event_detect(btn_one_gpio, GPIO.RISING, callback=callback_one, bouncetime = DEFAULT_BTN_DEBOUNCE_DELAY)
+GPIO.add_event_detect(btn_two_gpio, GPIO.RISING, callback=callback_two, bouncetime = DEFAULT_BTN_DEBOUNCE_DELAY)
 
 client = mqtt.Client(client_name)
 client.on_message=callback_on_message
@@ -304,6 +339,7 @@ while not connected and (connect_count < DEFAULT_MAX_MQTT_CONNECT_TRY):
     try:
         client.connect(mqtt_broker_address)
         client.subscribe(mqtt_topic_prefix+"get_status")
+        client.subscribe(mqtt_topic_prefix+"config")
         client.subscribe(mqtt_topic_prefix+"output")
         client.subscribe(mqtt_topic_prefix+"pong/btn_delay")
         client.subscribe(mqtt_topic_prefix+"pong/init_delay")
