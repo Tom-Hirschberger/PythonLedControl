@@ -96,6 +96,7 @@ def callback_on_message(client, userdata, message):
     global pong_max_wins, pong_wins_delay_after, pong_wins_delay_during
     global pong_color_r, pong_color_g, pong_color_b, pong_result_color_r, pong_result_color_g, pong_result_color_b
     global color_r, color_g, color_b
+    global stripe_on, stripe_mode
     message_str = str(message.payload.decode("utf-8"))
     print ("Received message %s for topic %s" %(message_str, message.topic))
 
@@ -170,18 +171,24 @@ def callback_on_message(client, userdata, message):
             color_r = 255
         elif color_r < 0:
             color_r = 0
+        if stripe_mode == 0:
+            toggle_leds(stripe_on)
     elif message.topic == mqtt_topic_prefix+"color/g":
         color_g = int(message_str)
         if color_g > 255:
             color_g = 255
         elif color_g < 0:
             color_g = 0
+        if stripe_mode == 0:
+            toggle_leds(stripe_on)
     elif message.topic == mqtt_topic_prefix+"color/b":
         color_b = int(message_str)
         if color_b > 255:
             color_b = 255
         elif color_b < 0:
             color_b = 0
+        if stripe_mode == 0:
+            toggle_leds(stripe_on)
     elif message.topic == mqtt_topic_prefix+"get_status":
         print("Will publish the current status!")
         res_obj = {
@@ -300,6 +307,7 @@ def apply_config(new_config={}):
     global pong_max_wins, pong_wins_delay_after, pong_wins_delay_during
     global pong_color_r, pong_color_g, pong_color_b, pong_result_color_r, pong_result_color_g, pong_result_color_b
     global color_r, color_g, color_b
+    global stripe_mode, stripe_on
 
     pong_options = new_config.get("pong", {})
 
@@ -320,8 +328,11 @@ def apply_config(new_config={}):
     pong_result_color_b = pong_options.get("result_color_b",pong_result_color_b)
 
     color_r = new_config.get("color_r", color_r)
-    color_g = new_config.get("color_r", color_g)
-    color_b = new_config.get("color_r", color_b)
+    color_g = new_config.get("color_g", color_g)
+    color_b = new_config.get("color_b", color_b)
+
+    if stripe_mode == 0:
+        toggle_leds(stripe_on)
 
 GPIO.setmode(GPIO.BCM)
 
