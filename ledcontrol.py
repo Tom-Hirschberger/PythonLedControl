@@ -190,33 +190,43 @@ def callback_on_message(client, userdata, message):
         if stripe_mode == 0:
             toggle_leds(stripe_on)
     elif message.topic == mqtt_topic_prefix+"get_status":
-        print("Will publish the current status!")
-        res_obj = {
-            "pong" : {
-                "btn_delay" : pong_btn_delay,
-                "init_delay" : pong_init_delay,
-                "min_delay" : pong_min_delay,
-                "dec_per_run" : pong_dec_per_run,
-                "num_leds" : num_pong_leds,
-                "max_wins" : pong_max_wins,
-                "tolerance" : pong_tolerance,
-                "result_delay_during" : pong_wins_delay_during,
-                "result_delay_after" : pong_wins_delay_after,
-                "color_r" : pong_color_r,
-                "color_g" : pong_color_g,
-                "color_b" : pong_color_b,
-                "result_color_r" : pong_result_color_r,
-                "result_color_g" : pong_result_color_g,
-                "result_color_b" : pong_result_color_b
-            },
-            "output" : stripe_on,
-            "mode" : stripe_mode,
-            "color_r" : color_r,
-            "color_g" : color_g,
-            "color_b" : color_b
-        }
+        publish_current_status()
 
-        client.publish(mqtt_topic_prefix+"status",json.dumps(res_obj))
+def publish_current_status():
+    global mqtt_topic_prefix
+    global pong_btn_delay, pong_init_delay, pong_min_delay, pong_dec_per_run
+    global num_pong_leds, pong_tolerance
+    global pong_max_wins, pong_wins_delay_after, pong_wins_delay_during
+    global pong_color_r, pong_color_g, pong_color_b, pong_result_color_r, pong_result_color_g, pong_result_color_b
+    global color_r, color_g, color_b
+    global stripe_on, stripe_mode
+    print("Will publish the current status!")
+    res_obj = {
+        "pong" : {
+            "btn_delay" : pong_btn_delay,
+            "init_delay" : pong_init_delay,
+            "min_delay" : pong_min_delay,
+            "dec_per_run" : pong_dec_per_run,
+            "num_leds" : num_pong_leds,
+            "max_wins" : pong_max_wins,
+            "tolerance" : pong_tolerance,
+            "result_delay_during" : pong_wins_delay_during,
+            "result_delay_after" : pong_wins_delay_after,
+            "color_r" : pong_color_r,
+            "color_g" : pong_color_g,
+            "color_b" : pong_color_b,
+            "result_color_r" : pong_result_color_r,
+            "result_color_g" : pong_result_color_g,
+            "result_color_b" : pong_result_color_b
+        },
+        "output" : stripe_on,
+        "mode" : stripe_mode,
+        "color_r" : color_r,
+        "color_g" : color_g,
+        "color_b" : color_b
+    }
+
+    client.publish(mqtt_topic_prefix+"status",json.dumps(res_obj))
 
 def callback_one(channel):
     global btn_one_time
@@ -250,6 +260,7 @@ def toggle_leds(to_state = None):
         stripe_on = False
 
     pixels.show()
+    publish_current_status()
 
 def switch_to_pong_mode():
     global btn_one_state
@@ -311,25 +322,25 @@ def apply_config(new_config={}):
 
     pong_options = new_config.get("pong", {})
 
-    pong_btn_delay = pong_options.get("btn_delay",pong_btn_delay)
-    pong_init_delay = pong_options.get("init_delay",pong_init_delay)
-    pong_min_delay = pong_options.get("min_delay",pong_min_delay)
-    pong_dec_per_run = pong_options.get("dec_per_run",pong_dec_per_run)
-    num_pong_leds = pong_options.get("num_leds",num_pong_leds)
-    pong_max_wins = pong_options.get("max_wins",pong_max_wins)
-    pong_tolerance = pong_options.get("tolerance",pong_tolerance)
-    pong_wins_delay_after = pong_options.get("result_delay_after",pong_wins_delay_after)
-    pong_wins_delay_during = pong_options.get("result_delay_during",pong_wins_delay_during)
-    pong_color_r = pong_options.get("color_r",pong_color_r)
-    pong_color_g = pong_options.get("color_g",pong_color_g)
-    pong_color_b = pong_options.get("color_b",pong_color_b)
-    pong_result_color_r = pong_options.get("result_color_r",pong_result_color_r)
-    pong_result_color_g = pong_options.get("result_color_g",pong_result_color_g)
-    pong_result_color_b = pong_options.get("result_color_b",pong_result_color_b)
+    pong_btn_delay = float(pong_options.get("btn_delay",pong_btn_delay))
+    pong_init_delay = float(pong_options.get("init_delay",pong_init_delay))
+    pong_min_delay = float(pong_options.get("min_delay",pong_min_delay))
+    pong_dec_per_run = float(pong_options.get("dec_per_run",pong_dec_per_run))
+    num_pong_leds = int(pong_options.get("num_leds",num_pong_leds))
+    pong_max_wins = int(pong_options.get("max_wins",pong_max_wins))
+    pong_tolerance = int(pong_options.get("tolerance",pong_tolerance))
+    pong_wins_delay_after = float(pong_options.get("result_delay_after",pong_wins_delay_after))
+    pong_wins_delay_during = float(pong_options.get("result_delay_during",pong_wins_delay_during))
+    pong_color_r = int(pong_options.get("color_r",pong_color_r))
+    pong_color_g = int(pong_options.get("color_g",pong_color_g))
+    pong_color_b = int(pong_options.get("color_b",pong_color_b))
+    pong_result_color_r = int(pong_options.get("result_color_r",pong_result_color_r))
+    pong_result_color_g = int(pong_options.get("result_color_g",pong_result_color_g))
+    pong_result_color_b = int(pong_options.get("result_color_b",pong_result_color_b))
 
-    color_r = new_config.get("color_r", color_r)
-    color_g = new_config.get("color_g", color_g)
-    color_b = new_config.get("color_b", color_b)
+    color_r = int(new_config.get("color_r", color_r))
+    color_g = int(new_config.get("color_g", color_g))
+    color_b = int(new_config.get("color_b", color_b))
 
     if stripe_mode == 0:
         toggle_leds(stripe_on)
