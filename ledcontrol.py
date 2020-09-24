@@ -166,20 +166,36 @@ def callback_on_message(client, userdata, message):
             print("Received wrong config: %s" % message_str)
     elif message.topic == mqtt_topic_prefix+"pong/btn_delay":
         pong_btn_delay = float(message_str)
+        if pong_btn_delay < 0:
+            pong_btn_delay = 0
     elif message.topic == mqtt_topic_prefix+"pong/init_delay":
         pong_init_delay = float(message_str)
+        if pong_init_delay < pong_min_delay:
+            pong_init_delay = pong_min_delay
     elif message.topic == mqtt_topic_prefix+"pong/min_delay":
         pong_min_delay = float(message_str)
+        if pong_min_delay < 0:
+            pong_min_delay = 0
     elif message.topic == mqtt_topic_prefix+"pong/dec_per_run":
         pong_dec_per_run = float(message_str)
+        if pong_dec_per_run < 0:
+            pong_dec_per_run = 0
     elif message.topic == mqtt_topic_prefix+"pong/num_leds":
         num_pong_leds = int(message_str)
+        if num_pong_leds > max_leds:
+            num_pong_leds = max_leds
     elif message.topic == mqtt_topic_prefix+"pong/max_wins":
         pong_max_wins = int(message_str)
+        if pong_max_wins > num_pong_leds:
+            pong_max_wins = num_pong_leds
     elif message.topic == mqtt_topic_prefix+"pong/result/delay/during":
         pong_wins_delay_during = float(message_str)
+        if pong_wins_delay_during < 0:
+            pong_wins_delay_during = 0
     elif message.topic == mqtt_topic_prefix+"pong/result/delay/after":
         pong_wins_delay_after = float(message_str)
+        if pong_wins_delay_after < 0:
+            pong_wins_delay_after = 0
     elif message.topic == mqtt_topic_prefix+"pong/result/color/r":
         pong_result_color_r = int(message_str)
         if pong_result_color_r > 255:
@@ -200,6 +216,10 @@ def callback_on_message(client, userdata, message):
             pong_result_color_b = 0
     elif message.topic == mqtt_topic_prefix+"pong/tolerance":
         pong_tolerance = int(message_str)
+        if pong_tolerance < 0:
+            pong_tolerance = 0
+        if pong_tolerance > (num_pong_leds - 1):
+            pong_tolerance = num_pong_leds - 1
     elif message.topic == mqtt_topic_prefix+"pong/color/r":
         pong_color_r = int(message_str)
         if pong_color_r > 255:
@@ -379,24 +399,80 @@ def apply_config(new_config={}):
     pong_options = new_config.get("pong", {})
 
     pong_btn_delay = float(pong_options.get("btn_delay",pong_btn_delay))
-    pong_init_delay = float(pong_options.get("init_delay",pong_init_delay))
+    if pong_btn_delay < 0:
+        pong_btn_delay = 0
     pong_min_delay = float(pong_options.get("min_delay",pong_min_delay))
+    if pong_min_delay < 0:
+        pong_min_delay = 0
+    pong_init_delay = float(pong_options.get("init_delay",pong_init_delay))
+    if pong_init_delay < pong_min_delay:
+        pong_init_delay = pong_min_delay
     pong_dec_per_run = float(pong_options.get("dec_per_run",pong_dec_per_run))
+    if pong_dec_per_run < 0:
+        pong_dec_per_run = 0
     num_pong_leds = int(pong_options.get("num_leds",num_pong_leds))
+    if num_pong_leds > max_leds:
+        num_pong_leds = max_leds
     pong_max_wins = int(pong_options.get("max_wins",pong_max_wins))
+    if pong_max_wins > num_pong_leds:
+        pong_max_wins = num_pong_leds
     pong_tolerance = int(pong_options.get("tolerance",pong_tolerance))
+    if pong_tolerance < 0:
+        pong_tolerance = 0
+    if pong_tolerance > (num_pong_leds - 1):
+        pong_tolerance = num_pong_leds - 1
     pong_wins_delay_after = float(pong_options.get("result_delay_after",pong_wins_delay_after))
+    if pong_wins_delay_after < 0:
+        pong_wins_delay_after = 0
     pong_wins_delay_during = float(pong_options.get("result_delay_during",pong_wins_delay_during))
+    if pong_wins_delay_during < 0:
+        pong_wins_delay_during = 0
     pong_color_r = int(pong_options.get("color_r",pong_color_r))
+    if pong_color_r > 255:
+        pong_color_r = 255
+    if pong_color_r < 0:
+        pong_color_r = 0
     pong_color_g = int(pong_options.get("color_g",pong_color_g))
+    if pong_color_g > 255:
+        pong_color_g = 255
+    if pong_color_g < 0:
+        pong_color_g = 0
     pong_color_b = int(pong_options.get("color_b",pong_color_b))
+    if pong_color_b > 255:
+        pong_color_b = 255
+    if pong_color_b < 0:
+        pong_color_b = 0
     pong_result_color_r = int(pong_options.get("result_color_r",pong_result_color_r))
+    if pong_result_color_r > 255:
+        pong_result_color_r = 255
+    if pong_result_color_r < 0:
+        pong_result_color_r = 0
     pong_result_color_g = int(pong_options.get("result_color_g",pong_result_color_g))
+    if pong_result_color_g > 255:
+        pong_result_color_g = 255
+    if pong_result_color_g < 0:
+        pong_result_color_g = 0
     pong_result_color_b = int(pong_options.get("result_color_b",pong_result_color_b))
+    if pong_result_color_b > 255:
+        pong_result_color_b = 255
+    if pong_result_color_b < 0:
+        pong_result_color_b = 0
 
     color_r = int(new_config.get("color_r", color_r))
+    if color_r > 255:
+        color_r = 255
+    if color_r < 0:
+        color_r = 0
     color_g = int(new_config.get("color_g", color_g))
+    if color_g > 255:
+        color_g = 255
+    if color_g < 0:
+        color_g = 0
     color_b = int(new_config.get("color_b", color_b))
+    if color_b > 255:
+        color_b = 255
+    if color_b < 0:
+        color_b = 0
 
     if stripe_mode == 0:
         toggle_leds(stripe_on)

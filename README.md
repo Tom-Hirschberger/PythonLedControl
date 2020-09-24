@@ -18,13 +18,49 @@
 ```
 
 ## Configuration
-    Open the file /home/pi/ledcontrol/ledcontrol.env in your favorit editor. In example:
+Open the file /home/pi/ledcontrol/ledcontrol.env in your favorit editor. In example:
 
 ```
     nano /home/pi/ledcontrol/ledcontrol.env
 ```
 
 ### Options ###
+MQTT_CLIENT_NAME="raspled"
+MQTT_BROKER_ADDRESS="192.168.1.2"
+MQTT_TOPIC_PREFIX="raspled/"
+
+LED_BTN_ONE_GPIO=17
+LED_BTN_TWO_GPIO=27
+LED_BTN_DEBOUNCE_DELAY=300
+
+LED_NUM_LEDS=160
+LED_MAX_LEDS=160
+
+LED_PONG_NUM_LEDS=10
+LED_PONG_MAX_WINS=2
+LED_PONG_TOLERANCE=2
+
+LED_COLOR_R=255
+LED_COLOR_G=255
+LED_COLOR_B=255"
+
+LED_PONG_COLOR_R=0
+LED_PONG_COLOR_G=0
+LED_PONG_COLOR_B=255
+
+LED_PONG_RESULT_COLOR_R=0
+LED_PONG_RESULT_COLOR_G=255
+LED_PONG_RESULT_COLOR_B=0
+
+LED_PONG_INIT_DELAY=0.5
+LED_PONG_DEC_PER_RUN=0.05
+LED_PONG_MIN_DELAY=0.02
+
+LED_PONG_BTN_DELAY=2
+LED_PONG_RESULT_DELAY_DURING=2
+LED_PONG_RESULT_DELAY_AFTER=5
+
+
 | Option | Description | Type | Default |
 | ------ | ----------- | ---- | ------- |
 | MQTT_ACTIVE | If the script should be run without MQTT support this option can be used (0=disabled, 1=enabled). | Integer | 1 |
@@ -42,6 +78,7 @@ The script can be configured during runtime by sending MQTT messages to your MQT
 Switch the led strip on or off
 
 "on" -> Switch all leds on
+
 "off" -> Switch all leds off
 
 ### /raspled/get_status ###
