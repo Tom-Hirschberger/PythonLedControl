@@ -8,7 +8,7 @@ import json
 import os
 import pprint
 
-DEFAULT_MQTT_ACTIVE=1
+DEFAULT_MQTT_ACTIVE=True
 DEFAULT_MQTT_BROKER_ADDRESS="192.168.1.2"
 DEFAULT_CLIENT_NAME="raspled"
 DEFAULT_SPI_PORT=0
@@ -19,14 +19,14 @@ DEFAULT_NUM_PONG_LEDS=10
 DEFAULT_BTN_ONE_GPIO=17
 DEFAULT_BTN_TWO_GPIO=27
 DEFAULT_BTN_DEBOUNCE_DELAY=300
-DEFAULT_PONG_BTN_DELAY=2
+DEFAULT_PONG_BTN_DELAY=2.0
 DEFAULT_PONG_MAX_WINS=2
 DEFAULT_PONG_TOLERANCE=2
 DEFAULT_PONG_INIT_LED_DELAY=0.5
 DEFAULT_PONG_DEC_PER_RUN=0.05
 DEFAULT_PONG_MIN_LED_DELAY=0.02
-DEFAULT_PONG_RESULT_DELAY_DURING=2
-DEFAULT_PONG_RESULT_DELAY_AFTER=5
+DEFAULT_PONG_RESULT_DELAY_DURING=2.0
+DEFAULT_PONG_RESULT_DELAY_AFTER=5.0
 DEFAULT_PONG_COLOR_R=0
 DEFAULT_PONG_COLOR_B=255
 DEFAULT_PONG_COLOR_G=0
@@ -37,8 +37,27 @@ DEFAULT_COLOR_R=255
 DEFAULT_COLOR_G=255
 DEFAULT_COLOR_B=255
 
-btn_one_gpio = os.getenv("LED_BTN_ONE_GPIO", DEFAULT_BTN_ONE_GPIO)
-btn_two_gpio = os.getenv("LED_BTN_TWO_GPIO", DEFAULT_BTN_TWO_GPIO)
+def sys_var_to_var(sys_var, default_value):
+    if type(default_value) is int:
+        return int(os.getenv(sys_var, default_value))
+    elif type(default_value) is float:
+        return float(os.getenv(sys_var, default_value))
+    elif type(default_value) is bool:
+        if default_value:
+            cur_value = 1
+        else:
+            cur_value = 0
+        if os.getenv(sys_var, cur_value) == 1:
+            return True
+        else:
+            return False
+    else:
+        return os.getenv(sys_var, default_value)
+
+
+btn_one_gpio = sys_var_to_var("LED_BTN_ONE_GPIO", DEFAULT_BTN_ONE_GPIO)
+btn_two_gpio = sys_var_to_var("LED_BTN_TWO_GPIO", DEFAULT_BTN_TWO_GPIO)
+btn_debounce = sys_var_to_var("LED_BTN_DEBOUNCE_DELAY", DEFAULT_BTN_DEBOUNCE_DELAY)
 
 reverse_mode = False
 cur_pixel = 0
@@ -47,52 +66,47 @@ btn_one_time = 0
 btn_two_state = False
 btn_two_time = 0
 
-num_leds = DEFAULT_NUM_LEDS
-max_leds = DEFAULT_MAX_LEDS
+num_leds = sys_var_to_var("LED_NUM_LEDS", DEFAULT_NUM_LEDS)
+max_leds = sys_var_to_var("LED_MAX_LEDS", DEFAULT_MAX_LEDS)
 stripe_mode = 0
 stripe_on = False
-color_r = DEFAULT_COLOR_R
-color_g = DEFAULT_COLOR_G
-color_b = DEFAULT_COLOR_B
+color_r = sys_var_to_var("LED_COLOR_R",DEFAULT_COLOR_R)
+color_g = sys_var_to_var("LED_COLOR_G",DEFAULT_COLOR_G)
+color_b = sys_var_to_var("LED_COLOR_B",DEFAULT_COLOR_B)
 
 
-pong_init_delay = DEFAULT_PONG_INIT_LED_DELAY
+pong_init_delay = sys_var_to_var("LED_PONG_INIT_DELAY", DEFAULT_PONG_INIT_LED_DELAY)
 cur_pong_delay = pong_init_delay
-num_pong_leds = DEFAULT_NUM_PONG_LEDS
-pong_max_wins = DEFAULT_PONG_MAX_WINS
-pong_wins_delay_during = DEFAULT_PONG_RESULT_DELAY_DURING
-pong_wins_delay_after = DEFAULT_PONG_RESULT_DELAY_AFTER
-pong_min_delay = DEFAULT_PONG_MIN_LED_DELAY
-pong_dec_per_run = DEFAULT_PONG_DEC_PER_RUN
-pong_btn_delay = DEFAULT_PONG_BTN_DELAY
-pong_tolerance = DEFAULT_PONG_TOLERANCE
-pong_color_r = DEFAULT_PONG_COLOR_R
-pong_color_g = DEFAULT_PONG_COLOR_G
-pong_color_b = DEFAULT_PONG_COLOR_B
-pong_result_color_r = DEFAULT_PONG_RESULT_COLOR_R
-pong_result_color_g = DEFAULT_PONG_RESULT_COLOR_G
-pong_result_color_b = DEFAULT_PONG_RESULT_COLOR_B
+num_pong_leds = sys_var_to_var("LED_PONG_NUM_LEDS", DEFAULT_NUM_PONG_LEDS)
+pong_max_wins = sys_var_to_var("LED_PONG_MAX_WINS", DEFAULT_PONG_MAX_WINS)
+pong_wins_delay_during = sys_var_to_var("LED_PONG_RESULT_DELAY_DURING", DEFAULT_PONG_RESULT_DELAY_DURING)
+pong_wins_delay_after = sys_var_to_var("LED_PONG_RESULT_DELAY_AFTER", DEFAULT_PONG_RESULT_DELAY_AFTER)
+pong_min_delay = sys_var_to_var("LED_PONG_MIN_DELAY", DEFAULT_PONG_MIN_LED_DELAY)
+pong_dec_per_run = sys_var_to_var("LED_PONG_DEC_PER_RUN", DEFAULT_PONG_DEC_PER_RUN)
+pong_btn_delay = sys_var_to_var("LED_PONG_BTN_DELAY", DEFAULT_PONG_BTN_DELAY)
+pong_tolerance = sys_var_to_var("LED_PONG_TOLERANCE", DEFAULT_PONG_TOLERANCE)
+pong_color_r = sys_var_to_var("LED_PONG_COLOR_R", DEFAULT_PONG_COLOR_R)
+pong_color_g = sys_var_to_var("LED_PONG_COLOR_G", DEFAULT_PONG_COLOR_G)
+pong_color_b = sys_var_to_var("LED_PONG_COLOR_B", DEFAULT_PONG_COLOR_B)
+pong_result_color_r = sys_var_to_var("LED_PONG_RESULT_COLOR_R", DEFAULT_PONG_RESULT_COLOR_R)
+pong_result_color_g = sys_var_to_var("LED_PONG_RESULT_COLOR_G", DEFAULT_PONG_RESULT_COLOR_G)
+pong_result_color_b = sys_var_to_var("LED_PONG_RESULT_COLOR_B", DEFAULT_PONG_RESULT_COLOR_B)
 player_one_wins = 0
 player_one_successfull_press = False
 player_two_wins = 0
 player_two_successfull_press = False
 
 # Alternatively specify a hardware SPI connection on /dev/spidev0.0:
-spi_port   = os.getenv("SPI_PORT", DEFAULT_SPI_PORT)
-spi_device = os.getenv("SPI_DEVICE", DEFAULT_SPI_DEVICE)
+spi_port   = sys_var_to_var("SPI_PORT", DEFAULT_SPI_PORT)
+spi_device = sys_var_to_var("SPI_DEVICE", DEFAULT_SPI_DEVICE)
 pixels = Adafruit_WS2801.WS2801Pixels(max_leds, spi=SPI.SpiDev(spi_port, spi_device))
 pixels.clear()
 pixels.show()
 
-client_name = os.getenv("MQTT_CLIENT_NAME", DEFAULT_CLIENT_NAME)
-mqtt_broker_address = os.getenv("MQTT_BROKER_ADDRESS", DEFAULT_MQTT_BROKER_ADDRESS)
-mqtt_topic_prefix = os.getenv("MQTT_TOPIC_PREFIX", client_name+"/")
-mqtt_active = int(os.getenv("MQTT_ACTIVE", DEFAULT_MQTT_ACTIVE))
-
-if mqtt_active == 1:
-    mqtt_active = True
-else:
-    mqtt_active = False
+client_name = sys_var_to_var("MQTT_CLIENT_NAME", DEFAULT_CLIENT_NAME)
+mqtt_broker_address = sys_var_to_var("MQTT_BROKER_ADDRESS", DEFAULT_MQTT_BROKER_ADDRESS)
+mqtt_topic_prefix = sys_var_to_var("MQTT_TOPIC_PREFIX", client_name+"/")
+mqtt_active = sys_var_to_var("MQTT_ACTIVE", DEFAULT_MQTT_ACTIVE)
 
 client = None
 
@@ -151,21 +165,21 @@ def callback_on_message(client, userdata, message):
         except:
             print("Received wrong config: %s" % message_str)
     elif message.topic == mqtt_topic_prefix+"pong/btn_delay":
-        pong_btn_delay = int(message_str)
+        pong_btn_delay = float(message_str)
     elif message.topic == mqtt_topic_prefix+"pong/init_delay":
-        pong_init_delay = int(message_str)
+        pong_init_delay = float(message_str)
     elif message.topic == mqtt_topic_prefix+"pong/min_delay":
-        pong_min_delay = int(message_str)
+        pong_min_delay = float(message_str)
     elif message.topic == mqtt_topic_prefix+"pong/dec_per_run":
-        pong_dec_per_run = int(message_str)
+        pong_dec_per_run = float(message_str)
     elif message.topic == mqtt_topic_prefix+"pong/num_leds":
         num_pong_leds = int(message_str)
     elif message.topic == mqtt_topic_prefix+"pong/max_wins":
         pong_max_wins = int(message_str)
     elif message.topic == mqtt_topic_prefix+"pong/result/delay/during":
-        pong_wins_delay_during = int(message_str)
+        pong_wins_delay_during = float(message_str)
     elif message.topic == mqtt_topic_prefix+"pong/result/delay/after":
-        pong_wins_delay_after = int(message_str)
+        pong_wins_delay_after = float(message_str)
     elif message.topic == mqtt_topic_prefix+"pong/result/color/r":
         pong_result_color_r = int(message_str)
         if pong_result_color_r > 255:
@@ -409,8 +423,8 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(btn_one_gpio, GPIO.IN)
 GPIO.setup(btn_two_gpio, GPIO.IN)
 
-GPIO.add_event_detect(btn_one_gpio, GPIO.RISING, callback=callback_one, bouncetime = DEFAULT_BTN_DEBOUNCE_DELAY)
-GPIO.add_event_detect(btn_two_gpio, GPIO.RISING, callback=callback_two, bouncetime = DEFAULT_BTN_DEBOUNCE_DELAY)
+GPIO.add_event_detect(btn_one_gpio, GPIO.RISING, callback=callback_one, bouncetime = btn_debounce)
+GPIO.add_event_detect(btn_two_gpio, GPIO.RISING, callback=callback_two, bouncetime = btn_debounce)
 
 if mqtt_active:
     connect_mqtt_client()
