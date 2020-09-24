@@ -8,9 +8,9 @@ import json
 import os
 import pprint
 
+DEFAULT_MQTT_ACTIVE=1
 DEFAULT_MQTT_BROKER_ADDRESS="192.168.1.2"
 DEFAULT_CLIENT_NAME="raspled"
-DEFAULT_MAX_MQTT_CONNECT_TRY=15
 DEFAULT_SPI_PORT=0
 DEFAULT_SPI_DEVICE=0
 DEFAULT_MAX_LEDS=160
@@ -87,7 +87,46 @@ pixels.show()
 client_name = os.getenv("MQTT_CLIENT_NAME", DEFAULT_CLIENT_NAME)
 mqtt_broker_address = os.getenv("MQTT_BROKER_ADDRESS", DEFAULT_MQTT_BROKER_ADDRESS)
 mqtt_topic_prefix = os.getenv("MQTT_TOPIC_PREFIX", client_name+"/")
-mqtt_max_connect_attempts = os.getenv("MQTT_MAX_CONNECT_ATTEMPTS", DEFAULT_MAX_MQTT_CONNECT_TRY)
+mqtt_active = int(os.getenv("MQTT_ACTIVE", DEFAULT_MQTT_ACTIVE))
+
+if mqtt_active == 1:
+    mqtt_active = True
+else:
+    mqtt_active = False
+
+client = None
+
+def on_connect(client, userdata, flags, rc):
+    if rc==0:
+        client.connected_flag=True #set flag
+        print("Connected to MQTT broker. Subscribing for our topics")
+        client.subscribe(mqtt_topic_prefix+"get_status")
+        client.subscribe(mqtt_topic_prefix+"config")
+        client.subscribe(mqtt_topic_prefix+"output")
+        client.subscribe(mqtt_topic_prefix+"pong/btn_delay")
+        client.subscribe(mqtt_topic_prefix+"pong/init_delay")
+        client.subscribe(mqtt_topic_prefix+"pong/min_delay")
+        client.subscribe(mqtt_topic_prefix+"pong/dec_per_run")
+        client.subscribe(mqtt_topic_prefix+"pong/num_leds")
+        client.subscribe(mqtt_topic_prefix+"pong/max_wins")
+        client.subscribe(mqtt_topic_prefix+"pong/result/delay/during")
+        client.subscribe(mqtt_topic_prefix+"pong/result/delay/after")
+        client.subscribe(mqtt_topic_prefix+"pong/result/color/r")
+        client.subscribe(mqtt_topic_prefix+"pong/result/color/g")
+        client.subscribe(mqtt_topic_prefix+"pong/result/color/b")
+        client.subscribe(mqtt_topic_prefix+"pong/tolerance")
+        client.subscribe(mqtt_topic_prefix+"pong/color/r")
+        client.subscribe(mqtt_topic_prefix+"pong/color/g")
+        client.subscribe(mqtt_topic_prefix+"pong/color/b")
+        client.subscribe(mqtt_topic_prefix+"color/r")
+        client.subscribe(mqtt_topic_prefix+"color/g")
+        client.subscribe(mqtt_topic_prefix+"color/b")
+    else:
+        print("Bad connection Returned code= ",rc)
+
+def on_disconnect(client, userdata, rc):
+    print("on_disconnect")
+    client.connected_flag = False
 
 def callback_on_message(client, userdata, message):
     global mqtt_topic_prefix
@@ -193,6 +232,7 @@ def callback_on_message(client, userdata, message):
         publish_current_status()
 
 def publish_current_status():
+    global client
     global mqtt_topic_prefix
     global pong_btn_delay, pong_init_delay, pong_min_delay, pong_dec_per_run
     global num_pong_leds, pong_tolerance
@@ -200,33 +240,35 @@ def publish_current_status():
     global pong_color_r, pong_color_g, pong_color_b, pong_result_color_r, pong_result_color_g, pong_result_color_b
     global color_r, color_g, color_b
     global stripe_on, stripe_mode
-    print("Will publish the current status!")
-    res_obj = {
-        "pong" : {
-            "btn_delay" : pong_btn_delay,
-            "init_delay" : pong_init_delay,
-            "min_delay" : pong_min_delay,
-            "dec_per_run" : pong_dec_per_run,
-            "num_leds" : num_pong_leds,
-            "max_wins" : pong_max_wins,
-            "tolerance" : pong_tolerance,
-            "result_delay_during" : pong_wins_delay_during,
-            "result_delay_after" : pong_wins_delay_after,
-            "color_r" : pong_color_r,
-            "color_g" : pong_color_g,
-            "color_b" : pong_color_b,
-            "result_color_r" : pong_result_color_r,
-            "result_color_g" : pong_result_color_g,
-            "result_color_b" : pong_result_color_b
-        },
-        "output" : stripe_on,
-        "mode" : stripe_mode,
-        "color_r" : color_r,
-        "color_g" : color_g,
-        "color_b" : color_b
-    }
 
-    client.publish(mqtt_topic_prefix+"status",json.dumps(res_obj))
+    if client != None and client.connected_flag:
+        print("Will publish the current status!")
+        res_obj = {
+            "pong" : {
+                "btn_delay" : pong_btn_delay,
+                "init_delay" : pong_init_delay,
+                "min_delay" : pong_min_delay,
+                "dec_per_run" : pong_dec_per_run,
+                "num_leds" : num_pong_leds,
+                "max_wins" : pong_max_wins,
+                "tolerance" : pong_tolerance,
+                "result_delay_during" : pong_wins_delay_during,
+                "result_delay_after" : pong_wins_delay_after,
+                "color_r" : pong_color_r,
+                "color_g" : pong_color_g,
+                "color_b" : pong_color_b,
+                "result_color_r" : pong_result_color_r,
+                "result_color_g" : pong_result_color_g,
+                "result_color_b" : pong_result_color_b
+            },
+            "output" : stripe_on,
+            "mode" : stripe_mode,
+            "color_r" : color_r,
+            "color_g" : color_g,
+            "color_b" : color_b
+        }
+
+        client.publish(mqtt_topic_prefix+"status",json.dumps(res_obj))
 
 def callback_one(channel):
     global btn_one_time
@@ -345,6 +387,23 @@ def apply_config(new_config={}):
     if stripe_mode == 0:
         toggle_leds(stripe_on)
 
+def connect_mqtt_client():
+    global client
+    client = mqtt.Client(client_name)
+    client.connected_flag=False
+    client.on_message=callback_on_message
+    client.on_disconnect = on_disconnect
+    client.on_connect = on_connect
+    client.loop_start()
+    
+    print("Connecting to MQTT broker: %s" % mqtt_broker_address)
+    try:
+        client.connect(mqtt_broker_address)
+    except:
+        print("Connection attempt failed!")
+
+    time.sleep(5)
+
 GPIO.setmode(GPIO.BCM)
 
 GPIO.setup(btn_one_gpio, GPIO.IN)
@@ -353,147 +412,119 @@ GPIO.setup(btn_two_gpio, GPIO.IN)
 GPIO.add_event_detect(btn_one_gpio, GPIO.RISING, callback=callback_one, bouncetime = DEFAULT_BTN_DEBOUNCE_DELAY)
 GPIO.add_event_detect(btn_two_gpio, GPIO.RISING, callback=callback_two, bouncetime = DEFAULT_BTN_DEBOUNCE_DELAY)
 
-client = mqtt.Client(client_name)
-client.on_message=callback_on_message
-print("Connecting to MQTT broker: %s" % mqtt_broker_address)
-connected = False
-connect_count = 0
-while not connected and (connect_count < DEFAULT_MAX_MQTT_CONNECT_TRY):
-    try:
-        client.connect(mqtt_broker_address)
-        client.subscribe(mqtt_topic_prefix+"get_status")
-        client.subscribe(mqtt_topic_prefix+"config")
-        client.subscribe(mqtt_topic_prefix+"output")
-        client.subscribe(mqtt_topic_prefix+"pong/btn_delay")
-        client.subscribe(mqtt_topic_prefix+"pong/init_delay")
-        client.subscribe(mqtt_topic_prefix+"pong/min_delay")
-        client.subscribe(mqtt_topic_prefix+"pong/dec_per_run")
-        client.subscribe(mqtt_topic_prefix+"pong/num_leds")
-        client.subscribe(mqtt_topic_prefix+"pong/max_wins")
-        client.subscribe(mqtt_topic_prefix+"pong/result/delay/during")
-        client.subscribe(mqtt_topic_prefix+"pong/result/delay/after")
-        client.subscribe(mqtt_topic_prefix+"pong/result/color/r")
-        client.subscribe(mqtt_topic_prefix+"pong/result/color/g")
-        client.subscribe(mqtt_topic_prefix+"pong/result/color/b")
-        client.subscribe(mqtt_topic_prefix+"pong/tolerance")
-        client.subscribe(mqtt_topic_prefix+"pong/color/r")
-        client.subscribe(mqtt_topic_prefix+"pong/color/g")
-        client.subscribe(mqtt_topic_prefix+"pong/color/b")
-        client.subscribe(mqtt_topic_prefix+"color/r")
-        client.subscribe(mqtt_topic_prefix+"color/g")
-        client.subscribe(mqtt_topic_prefix+"color/b")
-        client.loop_start()
-        connected = True
-    except:
-        connect_count += 1
-        print("Connection attempt %d failed!" % connect_count)
-        time.sleep(1)
-
-if not connected:
-    print ("Could not connect to MQTT broker. Starting without MQTT support!")
+if mqtt_active:
+    connect_mqtt_client()
 
 try:
-  while True:
-    if stripe_mode == 0:
-        if btn_two_state == True:
-            btn_two_state = False
-            if((btn_two_time - btn_one_time) < pong_btn_delay):
-                switch_to_pong_mode()
-            else:
-                toggle_leds()
-        if btn_one_state == True:
-            btn_one_state = False
-            toggle_leds()
-    elif stripe_mode == 1:
-        pixels.clear()
-        pixels.set_pixel_rgb(cur_pixel, pong_color_r, pong_color_g, pong_color_b)
-        pixels.show()
-        time.sleep(cur_pong_delay)
+    while True:
 
-        abort_run = False
-        player_one_miss = False
-
-        if player_one_successfull_press == False:
-            if btn_one_state == True:
-                btn_one_state = False
-                if (reverse_mode == False) or (cur_pixel - pong_tolerance) >= 0:
-                    player_one_miss = True
-                else:
-                    player_one_successfull_press = True
-            elif ((reverse_mode == True) and (cur_pixel == 0)):
-                player_one_miss = True
-        else:
-            btn_one_state = False
-
-        if player_one_miss == True:
-            abort_run = True
-            player_two_wins += 1
-            if (player_two_wins >= pong_max_wins):
-                stripe_mode = 0
-                display_result(pong_wins_delay_after)
-                toggle_leds(False)
-            else:
-                display_result(pong_wins_delay_during)
-                cur_pixel = 0
-                reverse_mode = False
-                cur_pong_delay = pong_init_delay
-
-        player_two_miss = False
-        if player_two_successfull_press == False:
+        if stripe_mode == 0:
             if btn_two_state == True:
                 btn_two_state = False
-                if (reverse_mode == True) or ((cur_pixel + pong_tolerance) <= (num_pong_leds - 1)):
-                    player_two_miss = True
+                if((btn_two_time - btn_one_time) < pong_btn_delay):
+                    switch_to_pong_mode()
                 else:
-                    player_two_successfull_press = True
-            elif ((reverse_mode == False) and (cur_pixel == (num_pong_leds - 1))):
-                player_two_miss = True
-        else:
-            btn_two_state = False
-
-        if player_two_miss == True:
-            abort_run = True
-            player_one_wins += 1
-            if player_one_wins >= pong_max_wins:
-                stripe_mode = 0
-                display_result(pong_wins_delay_after)
-                toggle_leds(False)
-                btn_two_state = False
+                    toggle_leds()
+            if btn_one_state == True:
                 btn_one_state = False
-                player_one_successfull_press = False
-                player_two_successfull_press = False
+                toggle_leds()
+        elif stripe_mode == 1:
+            pixels.clear()
+            pixels.set_pixel_rgb(cur_pixel, pong_color_r, pong_color_g, pong_color_b)
+            pixels.show()
+            time.sleep(cur_pong_delay)
+
+            abort_run = False
+            player_one_miss = False
+
+            if player_one_successfull_press == False:
+                if btn_one_state == True:
+                    btn_one_state = False
+                    if (reverse_mode == False) or (cur_pixel - pong_tolerance) >= 0:
+                        player_one_miss = True
+                    else:
+                        player_one_successfull_press = True
+                elif ((reverse_mode == True) and (cur_pixel == 0)):
+                    player_one_miss = True
             else:
-                display_result(pong_wins_delay_during)
-                cur_pixel = 0
-                reverse_mode = False
-                btn_two_state = False
                 btn_one_state = False
-                player_one_successfull_press = False
-                player_two_successfull_press = False
-                cur_pong_delay = pong_init_delay
 
-        if abort_run == False:
-            if reverse_mode == True:
-                cur_pixel -= 1
-                if cur_pixel < 0:
+            if player_one_miss == True:
+                abort_run = True
+                player_two_wins += 1
+                if (player_two_wins >= pong_max_wins):
+                    stripe_mode = 0
+                    display_result(pong_wins_delay_after)
+                    toggle_leds(False)
+                else:
+                    display_result(pong_wins_delay_during)
+                    cur_pixel = 0
                     reverse_mode = False
-                    player_one_successfull_press = False
-                    cur_pixel = 1
-                    cur_pong_delay = cur_pong_delay - pong_dec_per_run
-                    if cur_pong_delay < pong_min_delay:
-                        cur_pong_delay = pong_min_delay
+                    cur_pong_delay = pong_init_delay
+
+            player_two_miss = False
+            if player_two_successfull_press == False:
+                if btn_two_state == True:
+                    btn_two_state = False
+                    if (reverse_mode == True) or ((cur_pixel + pong_tolerance) <= (num_pong_leds - 1)):
+                        player_two_miss = True
+                    else:
+                        player_two_successfull_press = True
+                elif ((reverse_mode == False) and (cur_pixel == (num_pong_leds - 1))):
+                    player_two_miss = True
             else:
-                cur_pixel += 1
-                if cur_pixel > (num_pong_leds - 1):
+                btn_two_state = False
+
+            if player_two_miss == True:
+                abort_run = True
+                player_one_wins += 1
+                if player_one_wins >= pong_max_wins:
+                    stripe_mode = 0
+                    display_result(pong_wins_delay_after)
+                    toggle_leds(False)
+                    btn_two_state = False
+                    btn_one_state = False
+                    player_one_successfull_press = False
                     player_two_successfull_press = False
-                    cur_pixel = num_pong_leds - 2
-                    reverse_mode = True
-                    cur_pong_delay = cur_pong_delay - pong_dec_per_run
-                    if cur_pong_delay < pong_min_delay:
-                        cur_pong_delay = pong_min_delay
+                else:
+                    display_result(pong_wins_delay_during)
+                    cur_pixel = 0
+                    reverse_mode = False
+                    btn_two_state = False
+                    btn_one_state = False
+                    player_one_successfull_press = False
+                    player_two_successfull_press = False
+                    cur_pong_delay = pong_init_delay
+
+            if abort_run == False:
+                if reverse_mode == True:
+                    cur_pixel -= 1
+                    if cur_pixel < 0:
+                        reverse_mode = False
+                        player_one_successfull_press = False
+                        cur_pixel = 1
+                        cur_pong_delay = cur_pong_delay - pong_dec_per_run
+                        if cur_pong_delay < pong_min_delay:
+                            cur_pong_delay = pong_min_delay
+                else:
+                    cur_pixel += 1
+                    if cur_pixel > (num_pong_leds - 1):
+                        player_two_successfull_press = False
+                        cur_pixel = num_pong_leds - 2
+                        reverse_mode = True
+                        cur_pong_delay = cur_pong_delay - pong_dec_per_run
+                        if cur_pong_delay < pong_min_delay:
+                            cur_pong_delay = pong_min_delay
 
 
 except KeyboardInterrupt:
-  GPIO.cleanup()
-  print ("Bye")
+    GPIO.cleanup()
+
+    if client != None:
+        try:
+            client.loop_stop()
+            client.disconnect()
+        except:
+            pass
+    print ("Bye")
 
