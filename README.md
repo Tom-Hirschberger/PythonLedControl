@@ -28,6 +28,8 @@ Open the file /home/pi/ledcontrol/ledcontrol.env in your favorit editor. In exam
 MQTT_CLIENT_NAME="raspled"
 MQTT_BROKER_ADDRESS="192.168.1.2"
 MQTT_TOPIC_PREFIX="raspled/"
+MQTT_USERNAME=""
+MQTT_PASSWORD=""
 
 LED_BTN_ONE_GPIO=17
 LED_BTN_TWO_GPIO=27

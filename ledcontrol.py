@@ -10,6 +10,8 @@ import pprint
 
 DEFAULT_MQTT_ACTIVE=True
 DEFAULT_MQTT_BROKER_ADDRESS="192.168.1.2"
+DEFAULT_MQTT_USERNAME=None
+DEFAULT_MQTT_PASSWORD=""
 DEFAULT_CLIENT_NAME="raspled"
 DEFAULT_SPI_PORT=0
 DEFAULT_SPI_DEVICE=0
@@ -107,6 +109,8 @@ client_name = sys_var_to_var("MQTT_CLIENT_NAME", DEFAULT_CLIENT_NAME)
 mqtt_broker_address = sys_var_to_var("MQTT_BROKER_ADDRESS", DEFAULT_MQTT_BROKER_ADDRESS)
 mqtt_topic_prefix = sys_var_to_var("MQTT_TOPIC_PREFIX", client_name+"/")
 mqtt_active = sys_var_to_var("MQTT_ACTIVE", DEFAULT_MQTT_ACTIVE)
+mqtt_username = sys_var_to_var("MQTT_USERNAME", DEFAULT_MQTT_USERNAME)
+mqtt_password = sys_var_to_var("MQTT_PASSWORD", DEFAULT_MQTT_PASSWORD)
 
 client = None
 
@@ -478,7 +482,7 @@ def apply_config(new_config={}):
         toggle_leds(stripe_on)
 
 def connect_mqtt_client():
-    global client
+    global client, mqtt_username, mqtt_password
     client = mqtt.Client(client_name)
     client.connected_flag=False
     client.on_message=callback_on_message
@@ -488,6 +492,8 @@ def connect_mqtt_client():
     
     print("Connecting to MQTT broker: %s" % mqtt_broker_address)
     try:
+        if not ((mqtt_username is None) or (mqtt_username is "")):
+            client.username_pw_set(mqtt_username, mqtt_password)
         client.connect(mqtt_broker_address)
     except:
         print("Connection attempt failed!")
