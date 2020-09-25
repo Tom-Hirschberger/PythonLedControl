@@ -45,7 +45,7 @@ Make sure the pi user is in the gpio and spi group:
 ### WS281X Strip ###
 ```
     sudo pip3 install rpi_ws281x adafruit-circuitpython-neopixel
-    sudo ln -s /home/pi/ledcontrol/ledcontrol-root.service /etc/systemd/system/ledcontrol.service
+    sudo cp /home/pi/ledcontrol/ledcontrol-root.service /etc/systemd/system/ledcontrol.service
     sudo systemctl enable ledcontrol
 ```
 
