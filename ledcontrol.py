@@ -7,7 +7,9 @@ import paho.mqtt.client as mqtt
 import json
 import os
 import pprint
+import signal
 
+#define some default values
 DEFAULT_MQTT_ACTIVE=True
 DEFAULT_MQTT_BROKER_ADDRESS="192.168.1.2"
 DEFAULT_MQTT_USERNAME=None
@@ -15,6 +17,8 @@ DEFAULT_MQTT_PASSWORD=""
 DEFAULT_CLIENT_NAME="raspled"
 DEFAULT_SPI_PORT=0
 DEFAULT_SPI_DEVICE=0
+DEFAULT_SPI_CLK_GPIO=""
+DEFAULT_SPI_DATA_GPIO=""
 DEFAULT_MAX_LEDS=160
 DEFAULT_NUM_LEDS=160
 DEFAULT_NUM_PONG_LEDS=10
@@ -39,6 +43,12 @@ DEFAULT_COLOR_R=255
 DEFAULT_COLOR_G=255
 DEFAULT_COLOR_B=255
 
+#set the gpio mode to use the gpio numbering and not the pin numbering
+GPIO.setmode(GPIO.BCM)
+
+#function that decides if a system variable or the default value should be used
+#the type of the return value will be the same as of the default value
+#if the default value is boolean a value of "1" of the system variable will lead to a true value, all others to false
 def sys_var_to_var(sys_var, default_value):
     if type(default_value) is int:
         return int(os.getenv(sys_var, default_value))
@@ -56,7 +66,7 @@ def sys_var_to_var(sys_var, default_value):
     else:
         return os.getenv(sys_var, default_value)
 
-
+#init the variables either with the default value or values that are set in environment variables
 btn_one_gpio = sys_var_to_var("LED_BTN_ONE_GPIO", DEFAULT_BTN_ONE_GPIO)
 btn_two_gpio = sys_var_to_var("LED_BTN_TWO_GPIO", DEFAULT_BTN_TWO_GPIO)
 btn_debounce = sys_var_to_var("LED_BTN_DEBOUNCE_DELAY", DEFAULT_BTN_DEBOUNCE_DELAY)
@@ -98,10 +108,17 @@ player_one_successfull_press = False
 player_two_wins = 0
 player_two_successfull_press = False
 
-# Alternatively specify a hardware SPI connection on /dev/spidev0.0:
 spi_port   = sys_var_to_var("SPI_PORT", DEFAULT_SPI_PORT)
 spi_device = sys_var_to_var("SPI_DEVICE", DEFAULT_SPI_DEVICE)
-pixels = Adafruit_WS2801.WS2801Pixels(max_leds, spi=SPI.SpiDev(spi_port, spi_device))
+spi_clk_gpio = sys_var_to_var("SPI_CLK_GPIO", DEFAULT_SPI_CLK_GPIO)
+spi_data_gpio = sys_var_to_var("SPI_DATA_GPIO", DEFAULT_SPI_DATA_GPIO)
+
+#allways prefer the hardware connection
+if not spi_port is "":
+    pixels = Adafruit_WS2801.WS2801Pixels(max_leds, spi=SPI.SpiDev(spi_port, spi_device))
+else:
+    pixels = Adafruit_WS2801.WS2801Pixels(max_leds, clk=spi_clk_gpio, do=spi_data_gpio)
+
 pixels.clear()
 pixels.show()
 
@@ -114,6 +131,31 @@ mqtt_password = sys_var_to_var("MQTT_PASSWORD", DEFAULT_MQTT_PASSWORD)
 
 client = None
 
+stop_now = False
+
+#this function connects the mqtt client to the server
+#if a username is specified the credentials will be used
+def connect_mqtt_client():
+    global client, mqtt_username, mqtt_password
+    client = mqtt.Client(client_name)
+    client.connected_flag=False
+    client.on_message=callback_on_message
+    client.on_disconnect = on_disconnect
+    client.on_connect = on_connect
+    client.loop_start()
+    
+    print("Connecting to MQTT broker: %s" % mqtt_broker_address)
+    try:
+        if not ((mqtt_username is None) or (mqtt_username is "")):
+            client.username_pw_set(mqtt_username, mqtt_password)
+        client.connect(mqtt_broker_address)
+    except:
+        print("Connection attempt failed!")
+
+    time.sleep(5)
+
+#this funtion will be called everytime the MQTT connection will be (re-)established
+#after the connection is established the client registers to all necessary topics
 def on_connect(client, userdata, flags, rc):
     if rc==0:
         client.connected_flag=True #set flag
@@ -142,10 +184,12 @@ def on_connect(client, userdata, flags, rc):
     else:
         print("Bad connection Returned code= ",rc)
 
+#this function is called everytime the MQTT client is disconnected from the server
 def on_disconnect(client, userdata, rc):
     print("on_disconnect")
     client.connected_flag = False
 
+#this function is called everytime the MQTT client receives a message
 def callback_on_message(client, userdata, message):
     global mqtt_topic_prefix
     global pong_btn_delay, pong_init_delay, pong_min_delay, pong_dec_per_run
@@ -157,6 +201,9 @@ def callback_on_message(client, userdata, message):
     message_str = str(message.payload.decode("utf-8"))
     print ("Received message %s for topic %s" %(message_str, message.topic))
 
+    #check to which topic the message was send
+    #apply the value in the same data type as the original and check if the new value is plausible (min, max)
+    #if the values are greater than the max or smaller than the min set the value to the max or min value
     if message.topic == mqtt_topic_prefix+"output":
         if message_str == "on":
             toggle_leds(True)
@@ -269,6 +316,7 @@ def callback_on_message(client, userdata, message):
     elif message.topic == mqtt_topic_prefix+"get_status":
         publish_current_status()
 
+#if the function is called the script publishes the current configuration and status to the PREFIX/status topic
 def publish_current_status():
     global client
     global mqtt_topic_prefix
@@ -308,6 +356,7 @@ def publish_current_status():
 
         client.publish(mqtt_topic_prefix+"status",json.dumps(res_obj))
 
+#this function is called if button one is pressed
 def callback_one(channel):
     global btn_one_time
     global btn_one_state
@@ -315,12 +364,15 @@ def callback_one(channel):
     btn_one_state = True
     
 
+#this function is called if the second button is pressed
 def callback_two(channel):
     global btn_two_time 
     global btn_two_state
     btn_two_time = time.time()
     btn_two_state = True
 
+#this function toggles the led stripe either to a specific state (on or off)
+#or to the opposite of the current one
 def toggle_leds(to_state = None):
     global stripe_on
     global pixels
@@ -342,6 +394,7 @@ def toggle_leds(to_state = None):
     pixels.show()
     publish_current_status()
 
+#this function will init the pong mode
 def switch_to_pong_mode():
     global btn_one_state
     global btn_two_state
@@ -376,6 +429,8 @@ def switch_to_pong_mode():
     pixels.show()
     time.sleep(1)
 
+#this function displays the current pong results
+#and waits a given delay
 def display_result(cur_delay):
     global pixels
     global player_one_wins, player_two_wins
@@ -392,6 +447,8 @@ def display_result(cur_delay):
     pixels.show()
     time.sleep(cur_delay)
 
+#this function overrides the current values with the ones in the new config
+#if the new config is only a partial one the values of the not existing parts will be kept
 def apply_config(new_config={}):
     global pong_btn_delay, pong_init_delay, pong_min_delay, pong_dec_per_run
     global num_pong_leds, pong_tolerance
@@ -481,39 +538,39 @@ def apply_config(new_config={}):
     if stripe_mode == 0:
         toggle_leds(stripe_on)
 
-def connect_mqtt_client():
-    global client, mqtt_username, mqtt_password
-    client = mqtt.Client(client_name)
-    client.connected_flag=False
-    client.on_message=callback_on_message
-    client.on_disconnect = on_disconnect
-    client.on_connect = on_connect
-    client.loop_start()
-    
-    print("Connecting to MQTT broker: %s" % mqtt_broker_address)
-    try:
-        if not ((mqtt_username is None) or (mqtt_username is "")):
-            client.username_pw_set(mqtt_username, mqtt_password)
-        client.connect(mqtt_broker_address)
-    except:
-        print("Connection attempt failed!")
+#this function will be called if the script gets killed (sigterm, sigint)
+def do_cleanup(signum, frame):
+    global client, stop_now
+    GPIO.cleanup()
 
-    time.sleep(5)
+    if client != None:
+        try:
+            client.loop_stop()
+            client.disconnect()
+        except:
+            pass
+    print ("Bye")
+    stop_now = True
 
-GPIO.setmode(GPIO.BCM)
 
+#register to the signals to do a graceful shutdown
+signal.signal(signal.SIGINT, do_cleanup)
+signal.signal(signal.SIGTERM, do_cleanup)
+
+#init the gpio ports of the buttons and register the callbacks
 GPIO.setup(btn_one_gpio, GPIO.IN)
 GPIO.setup(btn_two_gpio, GPIO.IN)
 
 GPIO.add_event_detect(btn_one_gpio, GPIO.RISING, callback=callback_one, bouncetime = btn_debounce)
 GPIO.add_event_detect(btn_two_gpio, GPIO.RISING, callback=callback_two, bouncetime = btn_debounce)
 
+#only if mqtt should be used we activate the clients
 if mqtt_active:
     connect_mqtt_client()
 
 try:
-    while True:
-
+    while not stop_now:
+        #normal mode
         if stripe_mode == 0:
             if btn_two_state == True:
                 btn_two_state = False
@@ -524,15 +581,18 @@ try:
             if btn_one_state == True:
                 btn_one_state = False
                 toggle_leds()
+        #pong mode
         elif stripe_mode == 1:
+            #black out all pixels and change only the pixel of the current one to the pong color value
             pixels.clear()
             pixels.set_pixel_rgb(cur_pixel, pong_color_r, pong_color_g, pong_color_b)
             pixels.show()
             time.sleep(cur_pong_delay)
 
+            #if the buttons get pressed to early or late we will abort the run
             abort_run = False
-            player_one_miss = False
 
+            player_one_miss = False
             if player_one_successfull_press == False:
                 if btn_one_state == True:
                     btn_one_state = False
@@ -612,15 +672,7 @@ try:
                         if cur_pong_delay < pong_min_delay:
                             cur_pong_delay = pong_min_delay
 
-
+#do some cleanup if the script gets killed
 except KeyboardInterrupt:
-    GPIO.cleanup()
-
-    if client != None:
-        try:
-            client.loop_stop()
-            client.disconnect()
-        except:
-            pass
-    print ("Bye")
+    do_cleanup()
 
