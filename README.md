@@ -6,7 +6,7 @@ The strip can be controlled either via hardware or software spi. The preferred m
 ## Wiring ##
 The strip uses 5V spi lanes but the Raspberry uses 3.3V. We need to use an level converter to get rid of this problem. Connecting the strip directly to the Pi may cause harm to it.
 
-The buttons will be connected with a 2kOhm pull down resistors each. The resistors will pull down the gpio to 0V if the buttons are not pressed. When the buttons are pressed gpio pins will be connected to the 3.3V lane which results in an high flag.
+The buttons will be connected with a 2kOhm pull down resistor each. The resistors will pull down the gpio to 0V if the buttons are not pressed. When the buttons are pressed the gpio pins will be connected to the 3.3V lane which results in an high flag.
 
 This example uses the hardware spi pins to connect the led strip.
 
@@ -199,3 +199,24 @@ Configures how many seconds the result should be displayed during the games.
 
 #### /raspled/pong/result/delay/after ####
 Configures how many seconds the final result should be displayed after the games.
+
+## Startup ##
+Because of the service file the script will be started automatically during system boot.
+
+### Manuel stop ###
+sudo systemctl stop ledcontrol
+
+### Manuel restart ###
+sudo systemctl restart ledcontrol
+
+### Manuel start ###
+sudo systemctl start ledcontrol
+
+### Check the status ###
+sudo systemctl status ledcontrol
+
+### View the log messages ###
+journalctl -u ledcontrol
+
+### View the log messages in continous mode ###
+journalctl -f -u ledcontrol
