@@ -1,0 +1,12 @@
+[Unit]
+Description=LedControl
+After=network.target
+
+[Service]
+User=root
+EnvironmentFile=/home/pi/ledcontrol/ledcontrol.env
+Type=simple
+ExecStart=/usr/bin/python3 /home/pi/ledcontrol/ledcontrol.py
+
+[Install]
+WantedBy=multi-user.target

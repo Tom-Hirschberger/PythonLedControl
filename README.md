@@ -1,5 +1,5 @@
 # PythonLedControl #
-The aim of this project is to provide a script that controls an WS2801 led strip connected to an Raspberry Pi board. Additionally two buttons are connected to the board to switch the led strip on or off. If the second button is pressed after the first button within a configurable time range the script will change to pong mode. A moving light will be started and the users need to press the buttons right before the light reaches the end of the strip. If the buttons are pressed in the right moment the moving light will turn the direction and the other user needs to press. Each time the moving light turns the direction the light gets faster.
+The aim of this project is to provide a script that controls an WS2801 or WS281X led strip connected to an Raspberry Pi board. Additionally to the strip two buttons are connected to the board to switch the led strip on or off. If the second button is pressed after the first button within a configurable time range the script will change to pong mode. A moving light will be started and the users need to press the buttons right before the light reaches the end of the strip. If the buttons are pressed in the right moment the moving light will turn the direction and the other user needs to press. Each time the moving light turns the direction the light gets faster.
 
 The strip can be controlled either via hardware or software spi. The preferred mode is hardware spi because the timing is very sensitive.
 
@@ -15,16 +15,36 @@ This example uses the hardware spi pins to connect the led strip.
 ## Installation ##
 ```
     sudo apt-get install -y python3-pip git
-    sudo pip3 install adafruit-ws2801
     sudo pip3 install paho-mqtt
 
     git clone https://github.com/Tom-Hirschberger/PythonLedControl.git /home/pi/ledcontrol
 
     cd /home/pi/ledcontrol
     cp ledcontrol.env.example ledcontrol.env
+```
 
-    sudo ln -s /home/pi/ledcontrol/ledcontrol.service /etc/systemd/system/ledcontrol.service
+### WS2801 Strip ###
+```
+    sudo pip3 install adafruit-ws2801
+    sudo ln -s /home/pi/ledcontrol/ledcontrol-pi.service /etc/systemd/system/ledcontrol.service
     sudo systemctl enable ledcontrol
+```
+
+Make sure the pi user is in the gpio and spi group:
+```
+    sudo usermod -a -G gpio,spi pi
+```
+
+### WS281X Strip ###
+```
+    sudo pip3 install rpi_ws281x adafruit-circuitpython-neopixel
+    sudo ln -s /home/pi/ledcontrol/ledcontrol-root.service /etc/systemd/system/ledcontrol.service
+    sudo systemctl enable ledcontrol
+```
+
+Make sure the root user is in the gpio group:
+```
+    sudo usermod -a -G gpio root
 ```
 
 ## Configuration ##
@@ -36,6 +56,23 @@ Open the file /home/pi/ledcontrol/ledcontrol.env in your favorit editor. In exam
 
 ### Options ###
 ```
+    #The script supports both, a WS2801 strip that is connected using SPI or a WS281X strip connected to a "normal" gpio
+    #If an LED_GPIO_PIN greater 0 is specified the WS281X routine is used if not the SPI routine
+    #Attention: Only GPIO10, GPIO12, GPIO18 and GPIO21 are supported!!!
+    LED_GPIO_PIN=-1
+    #If WS281X option is used you can change RGB mapping from GRB to RGB if you like
+    LED_RGB_MODE="GRB"
+
+    #The connection to the WS2801 LED stripe can be established either by hardware or software spi
+    #The default is hardware
+    #Change the value of SPI_PORT to "" and specify the spi GPIO pins to activate the software spi
+    SPI_PORT=0
+    SPI_DEVICE=0
+
+    #The clock and data pin to use for the software spi connection
+    SPI_CLK_GPIO=""
+    SPI_DATA_GPIO=""
+
     #Which name should the script use to register at the MQTT server?
     MQTT_CLIENT_NAME="raspled"
     #What is the hostname or ip of the MQTT server?
@@ -51,16 +88,6 @@ Open the file /home/pi/ledcontrol/ledcontrol.env in your favorit editor. In exam
     LED_BTN_TWO_GPIO=27
     #How many milliseconds should be waited before another press of the same button is accepted?
     LED_BTN_DEBOUNCE_DELAY=300
-    
-    #The connection to the LED stripe can be established either by hardware or software spi
-    #The default is hardware
-    #Change the value of SPI_PORT to "" and specify the spi GPIO pins to activate the software spi
-    SPI_PORT=0
-    SPI_DEVICE=0
-
-    #The clock and data pin to use for the software spi connection
-    SPI_CLK_GPIO=""
-    SPI_DATA_GPIO=""
 
     #How many leds does the connected led stripe have?
     LED_MAX_LEDS=160

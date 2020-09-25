@@ -1,7 +1,5 @@
 #! /usr/bin/env python3
 import RPi.GPIO as GPIO
-import Adafruit_WS2801
-import Adafruit_GPIO.SPI as SPI
 import time
 import paho.mqtt.client as mqtt
 import json
@@ -19,6 +17,8 @@ DEFAULT_SPI_PORT=0
 DEFAULT_SPI_DEVICE=0
 DEFAULT_SPI_CLK_GPIO=""
 DEFAULT_SPI_DATA_GPIO=""
+DEFAULT_LED_GPIO_PIN=-1
+DEFAULT_LED_RGB_MODE="GRB"
 DEFAULT_MAX_LEDS=160
 DEFAULT_NUM_LEDS=160
 DEFAULT_NUM_PONG_LEDS=10
@@ -66,6 +66,39 @@ def sys_var_to_var(sys_var, default_value):
     else:
         return os.getenv(sys_var, default_value)
 
+def clear_pixels(pixels):
+    global led_gpio_mode, led_rgb_mode
+    if led_gpio_mode:
+        if led_rgb_mode in (neopixel.RGB, neopixel.GRB):
+            pixels.fill((0, 0, 0))
+        else:
+            pixels.fill((0, 0, 0, 0))
+        
+    else:
+        pixels.clear()
+
+def set_pixel_color(pixels, i, color_r, color_g, color_b):
+    global led_gpio_mode, led_rgb_mode
+    if led_gpio_mode:
+        if led_rgb_mode in (neopixel.RGB, neopixel.GRB):
+            pixels[i] = (color_r,color_g,color_b)
+        else:
+            pixels[i] = (color_r,color_g,color_b,0)
+    else:
+        pixels.set_pixel_rgb(i, color_r, color_g, color_b)
+
+def get_board_pin(gpio_nr):
+    if gpio_nr is 21:
+        return board.D21
+    elif gpio_nr is 10:
+        return board.D10
+    elif gpio_nr is 12:
+        return board.D12
+    elif gpio_nr is 18:
+        return board.D18
+    else:
+        return None
+
 #init the variables either with the default value or values that are set in environment variables
 btn_one_gpio = sys_var_to_var("LED_BTN_ONE_GPIO", DEFAULT_BTN_ONE_GPIO)
 btn_two_gpio = sys_var_to_var("LED_BTN_TWO_GPIO", DEFAULT_BTN_TWO_GPIO)
@@ -108,18 +141,43 @@ player_one_successfull_press = False
 player_two_wins = 0
 player_two_successfull_press = False
 
+led_gpio_pin = sys_var_to_var("LED_GPIO_PIN", DEFAULT_LED_GPIO_PIN)
+led_rgb_mode = sys_var_to_var("LED_RGB_MODE", DEFAULT_LED_RGB_MODE)
 spi_port   = sys_var_to_var("SPI_PORT", DEFAULT_SPI_PORT)
 spi_device = sys_var_to_var("SPI_DEVICE", DEFAULT_SPI_DEVICE)
 spi_clk_gpio = sys_var_to_var("SPI_CLK_GPIO", DEFAULT_SPI_CLK_GPIO)
 spi_data_gpio = sys_var_to_var("SPI_DATA_GPIO", DEFAULT_SPI_DATA_GPIO)
 
-#allways prefer the hardware connection
-if not spi_port is "":
-    pixels = Adafruit_WS2801.WS2801Pixels(max_leds, spi=SPI.SpiDev(spi_port, spi_device))
-else:
-    pixels = Adafruit_WS2801.WS2801Pixels(max_leds, clk=spi_clk_gpio, do=spi_data_gpio)
+led_gpio_mode = False
+if led_gpio_pin > 0:
+    import neopixel, board
+    print ("Will WS281X library in %s color mode and the strip is connected to gpio %d" %(led_rgb_mode, led_gpio_pin))
 
-pixels.clear()
+    if led_rgb_mode is "RGB":
+        led_rgb_mode = neopixel.RGB
+    elif led_rgb_mode is "RGBW":
+        led_rgb_mode = neopixel.RGBW
+    elif led_rgb_mode is "GRB":
+        led_rgb_mode = neopixel.GRB
+    elif led_rgb_mode is "GRBW":
+        led_rgb_mode = neopixel.GRBW
+    else:
+        led_rgb_mode = neopixel.GRB
+
+    pixels = neopixel.NeoPixel(get_board_pin(led_gpio_pin), max_leds, brightness=1.0, auto_write=False, pixel_order=led_rgb_mode)
+    led_gpio_mode = True
+
+else:#allways prefer the hardware connection
+    import Adafruit_WS2801
+    import Adafruit_GPIO.SPI as SPI
+    if not spi_port is "":
+        print ("Will WS2801 library and the strip is connected to hardware spi port %d as device %d" %(spi_port, spi_device))
+        pixels = Adafruit_WS2801.WS2801Pixels(max_leds, spi=SPI.SpiDev(spi_port, spi_device))
+    else:
+        print ("Will WS2801 library and the strip is connected to software spi. Clock pin is GPIO%d and the data pin GPIO%d" %(spi_clk_gpio, spi_data_gpio))
+        pixels = Adafruit_WS2801.WS2801Pixels(max_leds, clk=spi_clk_gpio, do=spi_data_gpio)
+
+clear_pixels(pixels)
 pixels.show()
 
 client_name = sys_var_to_var("MQTT_CLIENT_NAME", DEFAULT_CLIENT_NAME)
@@ -387,10 +445,10 @@ def toggle_leds(to_state = None):
     
     if stripe_on == False:
         for i in range(0,num_leds):
-            pixels.set_pixel_rgb(i, color_r, color_g, color_b)
+            set_pixel_color(pixels, i, color_r, color_g, color_b)
         stripe_on = True
     else:
-        pixels.clear()
+        clear_pixels(pixels)
         stripe_on = False
 
     pixels.show()
@@ -418,16 +476,16 @@ def switch_to_pong_mode():
     cur_pixel = 0
     cur_pong_delay = pong_init_delay
 
-    pixels.clear()
+    clear_pixels(pixels)
     pixels.show()
     time.sleep(1)
 
     for i in range(0, num_pong_leds):
-        pixels.set_pixel_rgb(i, pong_color_r, pong_color_g, pong_color_b)
+        set_pixel_color(pixels, i, pong_color_r, pong_color_g, pong_color_b)
     pixels.show()
     time.sleep(1)
 
-    pixels.clear()
+    clear_pixels(pixels)
     pixels.show()
     time.sleep(1)
 
@@ -439,12 +497,12 @@ def display_result(cur_delay):
     global pong_result_color_r, pong_result_color_g, pong_result_color_b
     global num_pong_leds
     time.sleep(0.5)
-    pixels.clear()
+    clear_pixels(pixels)
     for i in range(0, player_one_wins):
-        pixels.set_pixel_rgb(i, pong_result_color_r , pong_result_color_g, pong_result_color_b)
+        set_pixel_color(pixels, i, pong_result_color_r, pong_result_color_g, pong_result_color_b)
 
     for i in range((num_pong_leds-player_two_wins), num_pong_leds):
-        pixels.set_pixel_rgb(i, pong_result_color_r, pong_result_color_g, pong_result_color_b)
+        set_pixel_color(pixels, i, pong_result_color_r, pong_result_color_g, pong_result_color_b)
 
     pixels.show()
     time.sleep(cur_delay)
@@ -586,8 +644,8 @@ try:
         #pong mode
         elif stripe_mode == 1:
             #black out all pixels and change only the pixel of the current one to the pong color value
-            pixels.clear()
-            pixels.set_pixel_rgb(cur_pixel, pong_color_r, pong_color_g, pong_color_b)
+            clear_pixels(pixels)
+            set_pixel_color(pixels, cur_pixel, pong_color_r, pong_color_g, pong_color_b)
             pixels.show()
             time.sleep(cur_pong_delay)
 
