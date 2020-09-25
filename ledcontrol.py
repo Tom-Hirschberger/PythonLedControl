@@ -207,8 +207,10 @@ def callback_on_message(client, userdata, message):
     if message.topic == mqtt_topic_prefix+"output":
         if message_str == "on":
             toggle_leds(True)
-        else:
+        elif message_str == "off":
             toggle_leds(False)
+        else:
+            toggle_leds()
     elif message.topic == mqtt_topic_prefix+"config":
         try:
             new_config = json.loads(message_str)
