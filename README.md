@@ -8,9 +8,16 @@ The strip uses 5V spi lanes but the Raspberry uses 3.3V. We need to use an level
 
 The buttons will be connected with a 2kOhm pull down resistor each. The resistors will pull down the gpio to 0V if the buttons are not pressed. When the buttons are pressed the gpio pins will be connected to the 3.3V lane which results in an high flag.
 
+
+### Wiring WS2801 ###
 This example uses the hardware spi pins to connect the led strip.
 
-![alt text](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol.png "Wiring")
+![alt text](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS2801.png "Wiring WS2801")
+
+### Wiring WS281X ###
+This example uses the GPIO21. 10, 12 and 18 are supported, also.
+
+![alt text](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS281X.png "Wiring WS281X")
 
 ## Installation ##
 ```
