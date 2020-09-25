@@ -4,6 +4,12 @@ The aim of this project is to provide a script that controls an WS2801 led strip
 The strip can be controlled either via hardware or software spi. The preferred mode is hardware spi because the timing is very sensitive.
 
 ## Wiring ##
+The strip uses 5V spi lanes but the Raspberry uses 3.3V. We need to use an level converter to get rid of this problem. Connecting the strip directly to the Pi may cause harm to it.
+
+The buttons will be connected with a 2kOhm pull down resistors each. The resistors will pull down the gpio to 0V if the buttons are not pressed. When the buttons are pressed gpio pins will be connected to the 3.3V lane which results in an high flag.
+
+This example uses the hardware spi pins to connect the led strip.
+
 ![alt text](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol.png "Wiring")
 
 ## Installation ##
