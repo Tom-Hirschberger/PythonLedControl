@@ -3,6 +3,8 @@ The aim of this project is to provide a script that controls an WS2801 or WS281X
 
 The strip can be controlled either via hardware or software spi. The preferred mode is hardware spi because the timing is very sensitive.
 
+**If you want to use an WS281X strip like i.e. WS2812B you can not use the build in sound output of the Raspberry Pi because both machnism use PWM. The installation guide will show you how to disable the kernel module of the on-board sound card!**
+
 ## Wiring ##
 The strip uses 5V spi lanes but the Raspberry uses 3.3V. We need to use an level converter to get rid of this problem. Connecting the strip directly to the Pi may cause harm to it.
 
@@ -14,7 +16,13 @@ This example uses the hardware spi pins to connect the led strip.
 
 ![alt text](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS2801.png "Wiring WS2801")
 
-### Wiring WS281X ###
+
+### Wiring WS2813 ###
+This example uses the GPIO21. 10, 12 and 18 are supported, also.
+
+![alt text](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS2813.png "Wiring WS281X")
+
+### Wiring WS281X (except WS2813)###
 This example uses the GPIO21. 10, 12 and 18 are supported, also.
 
 ![alt text](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS281X.png "Wiring WS281X")
@@ -52,6 +60,14 @@ Make sure the pi user is in the gpio and spi group:
 Make sure the root user is in the gpio group:
 ```
     sudo usermod -a -G gpio root
+```
+
+Make sure to disable the on-board sound card because both the strip and the sound card need to use PWM:
+```
+    sudo sed -i "s/^dtparam=audio=on/#dtparam=audio=on/g" /boot/config.txt
+    sudo sed -i "s/^snd_bcm2835\s*$/#snd_bcm2835/g" /etc/modules
+    echo 'blacklist snd_bcm2835' | sudo tee /etc/modprobe.d/blacklist-snd_bcm2835.conf
+    sudo chmod u=rw,g=r,o=r /etc/modprobe.d/blacklist-snd_bcm2835.conf
 ```
 
 ## Configuration ##
