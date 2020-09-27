@@ -164,6 +164,8 @@ Switch the led strip on or off
 
 "off" -> Switch all leds off
 
+anything else -> Toggle the status
+
 #### /raspled/get_status ####
 Trigger the script to send the current configuration als MQTT message to the topic "raspled/status". The message content will be in json format.
 ```json5

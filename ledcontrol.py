@@ -42,6 +42,8 @@ DEFAULT_PONG_RESULT_COLOR_B=0
 DEFAULT_COLOR_R=255
 DEFAULT_COLOR_G=255
 DEFAULT_COLOR_B=255
+DEFAULT_PUBLISH_STATUS_AFTER_EVERY_CONFIG_CHANGE=False
+DEFAULT_PUBLISH_STATUS_IF_TOGGLED=True
 
 #set the gpio mode to use the gpio numbering and not the pin numbering
 GPIO.setmode(GPIO.BCM)
@@ -147,6 +149,9 @@ spi_port   = sys_var_to_var("SPI_PORT", DEFAULT_SPI_PORT)
 spi_device = sys_var_to_var("SPI_DEVICE", DEFAULT_SPI_DEVICE)
 spi_clk_gpio = sys_var_to_var("SPI_CLK_GPIO", DEFAULT_SPI_CLK_GPIO)
 spi_data_gpio = sys_var_to_var("SPI_DATA_GPIO", DEFAULT_SPI_DATA_GPIO)
+
+publish_status_after_every_config_change = sys_var_to_var("LED_PUBLISH_STATUS_AFTER_EVERY_CONFIG_CHANGE", DEFAULT_PUBLISH_STATUS_AFTER_EVERY_CONFIG_CHANGE)
+publish_status_if_toggled = sys_var_to_var("LED_PUBLISH_STATUS_IF_TOGGLED", DEFAULT_PUBLISH_STATUS_IF_TOGGLED)
 
 led_gpio_mode = False
 if led_gpio_pin > 0:
@@ -385,7 +390,7 @@ def publish_current_status():
     global pong_max_wins, pong_wins_delay_after, pong_wins_delay_during
     global pong_color_r, pong_color_g, pong_color_b, pong_result_color_r, pong_result_color_g, pong_result_color_b
     global color_r, color_g, color_b
-    global stripe_on, stripe_mode
+    global stripe_on, stripe_mode, publish_status_if_toggled
 
     if client != None and client.connected_flag:
         print("Will publish the current status!")
@@ -437,11 +442,19 @@ def toggle_leds(to_state = None):
     global stripe_on
     global pixels
 
+    state_changed = False
+
     if to_state != None:
         if(to_state == False):
-            stripe_on = True
+            if stripe_on != True:
+                stripe_on = True
+                state_changed = True
         else:
-            stripe_on = False
+            if stripe_on != False:
+                stripe_on = False
+                state_changed = True
+    else:
+        state_changed = True
     
     if stripe_on == False:
         for i in range(0,num_leds):
@@ -452,7 +465,9 @@ def toggle_leds(to_state = None):
         stripe_on = False
 
     pixels.show()
-    publish_current_status()
+
+    if state_changed and publish_status_if_toggled:
+        publish_current_status()
 
 #this function will init the pong mode
 def switch_to_pong_mode():
@@ -515,7 +530,7 @@ def apply_config(new_config={}):
     global pong_max_wins, pong_wins_delay_after, pong_wins_delay_during
     global pong_color_r, pong_color_g, pong_color_b, pong_result_color_r, pong_result_color_g, pong_result_color_b
     global color_r, color_g, color_b
-    global stripe_mode, stripe_on
+    global stripe_mode, stripe_on, publish_status_after_every_config_change
 
     pong_options = new_config.get("pong", {})
 
@@ -596,7 +611,10 @@ def apply_config(new_config={}):
         color_b = 0
 
     if stripe_mode == 0:
-        toggle_leds(stripe_on)
+        toggle_leds(to_state = stripe_on)
+
+    if publish_status_after_every_config_change:
+        publish_current_status()
 
 #this function will be called if the script gets killed (sigterm, sigint)
 def do_cleanup(signum, frame):
