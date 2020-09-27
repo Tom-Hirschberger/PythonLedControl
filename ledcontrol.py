@@ -44,6 +44,7 @@ DEFAULT_COLOR_G=255
 DEFAULT_COLOR_B=255
 DEFAULT_PUBLISH_STATUS_AFTER_EVERY_CONFIG_CHANGE=False
 DEFAULT_PUBLISH_STATUS_IF_TOGGLED=True
+DEFAULT_PUBLISH_STATUS_AT_START=True
 
 #set the gpio mode to use the gpio numbering and not the pin numbering
 GPIO.setmode(GPIO.BCM)
@@ -152,6 +153,7 @@ spi_data_gpio = sys_var_to_var("SPI_DATA_GPIO", DEFAULT_SPI_DATA_GPIO)
 
 publish_status_after_every_config_change = sys_var_to_var("LED_PUBLISH_STATUS_AFTER_EVERY_CONFIG_CHANGE", DEFAULT_PUBLISH_STATUS_AFTER_EVERY_CONFIG_CHANGE)
 publish_status_if_toggled = sys_var_to_var("LED_PUBLISH_STATUS_IF_TOGGLED", DEFAULT_PUBLISH_STATUS_IF_TOGGLED)
+publish_status_at_start = sys_var_to_var("LED_PUBLISH_STATUS_AT_START", DEFAULT_PUBLISH_STATUS_AT_START)
 
 led_gpio_mode = False
 if led_gpio_pin > 0:
@@ -645,6 +647,8 @@ GPIO.add_event_detect(btn_two_gpio, GPIO.RISING, callback=callback_two, bounceti
 #only if mqtt should be used we activate the clients
 if mqtt_active:
     connect_mqtt_client()
+    if publish_status_at_start:
+        publish_current_status()
 
 try:
     while not stop_now:
