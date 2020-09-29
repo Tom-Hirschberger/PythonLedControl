@@ -20,14 +20,15 @@ This example uses the hardware spi pins to connect the led strip.
 ### Wiring WS2813 ###
 This example uses the GPIO21. 10, 12 and 18 are supported, also.
 
-![alt text](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS2813.png "Wiring WS281X")
+![Wiring WS2813](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS2813.png "Wiring WS2813")
 
 ### Wiring WS281X (except WS2813)###
 This example uses the GPIO21. 10, 12 and 18 are supported, also.
 
-![alt text](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS281X.png "Wiring WS281X")
+![Wiring WS281X](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS281X.png "Wiring WS281X")
 
 ## Installation ##
+### General###
 ```
     sudo apt-get install -y python3-pip git
     sudo pip3 install paho-mqtt
@@ -36,13 +37,13 @@ This example uses the GPIO21. 10, 12 and 18 are supported, also.
 
     cd /home/pi/ledcontrol
     cp ledcontrol.env.example ledcontrol.env
+    sudo cp /home/pi/ledcontrol/ledcontrol-root.service /etc/systemd/system/ledcontrol.service
+    sudo systemctl enable ledcontrol
 ```
 
 ### WS2801 Strip ###
 ```
     sudo pip3 install adafruit-ws2801
-    sudo ln -s /home/pi/ledcontrol/ledcontrol-pi.service /etc/systemd/system/ledcontrol.service
-    sudo systemctl enable ledcontrol
 ```
 
 Make sure the pi user is in the gpio and spi group:
@@ -50,11 +51,17 @@ Make sure the pi user is in the gpio and spi group:
     sudo usermod -a -G gpio,spi pi
 ```
 
+Check that the spi bus is enabled:
+```
+    sudo raspi-config
+```
+![raspi-config main menu](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/screenshots/raspi-config-00-main.png "Main Menu")
+![raspi-config main menu](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/screenshots/raspi-config-01-interfaceOptions.png "Interface Options")
+![raspi-config main menu](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/screenshots/raspi-config-02-activateSPI.png "Activate SPI")
+
 ### WS281X Strip ###
 ```
     sudo pip3 install rpi_ws281x adafruit-circuitpython-neopixel
-    sudo cp /home/pi/ledcontrol/ledcontrol-root.service /etc/systemd/system/ledcontrol.service
-    sudo systemctl enable ledcontrol
 ```
 
 Make sure the root user is in the gpio group:
