@@ -6,10 +6,9 @@ The strip can be controlled either via hardware or software spi. The preferred m
 **If you want to use an WS281X strip like i.e. WS2812B you can not use the build in sound output of the Raspberry Pi because both machnism use PWM. The installation guide will show you how to disable the kernel module of the on-board sound card!**
 
 ## Wiring ##
-The strip uses 5V spi lanes but the Raspberry uses 3.3V. We need to use an level converter to get rid of this problem. Connecting the strip directly to the Pi may cause harm to it.
+The strip uses 5V spi lanes but the Raspberry uses 3.3V. We need to use an level converter to get rid of this problem. Connecting the strip directly to the Pi may cause harm to it!
 
-The buttons will be connected with a 2kOhm pull down resistor each. The resistors will pull down the gpio to 0V if the buttons are not pressed. When the buttons are pressed the gpio pins will be connected to the 3.3V lane which results in an high flag.
-
+There are different possibilities to wire the buttons. I will show three examples.
 
 ### Wiring WS2801 ###
 This example uses the hardware spi pins to connect the led strip.
@@ -26,6 +25,31 @@ This example uses the GPIO21. 10, 12 and 18 are supported, also.
 This example uses the GPIO21. 10, 12 and 18 are supported, also.
 
 ![Wiring WS281X](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS281X.png "Wiring WS281X")
+
+### Wiring the Buttons with pull-down resistors ###
+GPIO pins do not have an inital default state. To get one we connect an resistor to the ground and to the pin. The GPIO then is low and will be set to high if the switch is pressed and the connection to the VCC pin is closed.
+
+![Two buttons pull-down](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-buttons-pulldown.png "Wiring the buttons with pull-down resistors")
+
+You need to set "LED_BTN_TRIGGER_ON_HIGH=1" in the environment file to get this setup work (default)!
+
+### Wiring the Buttons with pull-up resistors ###
+GPIO pins do not have an inital default state. To get one we connect an resistor to the VCC and to the pin. The GPIO then is high and will be set to low if the switch is pressed and the connection to the ground pin is closed.
+
+This setup is more robust against influnces of other electronical devices like frigerators or microwaves.
+
+![Two buttons pull-up](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-buttons-pullup.png "Wiring the buttons with pull-up resistors")
+
+You need to set "LED_BTN_TRIGGER_ON_HIGH=0" in the environment file to get this setup work!
+
+### Wiring the Buttons with pull-up resistors and capacitors###
+GPIO pins do not have an inital default state. To get one we connect an resistor to the VCC and to the pin. The GPIO then is high and will be set to low if the switch is pressed and the connection to the ground pin is closed.
+
+This setup is more robust against influnces of other electronical devices like frigerators or microwaves than the one which only uses pull-up resistors.
+
+![Two buttons pull-up with capacitors](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-buttons-pullup-withCapacitors.png "Wiring the buttons with pull-up resistors")
+
+You need to set "LED_BTN_TRIGGER_ON_HIGH=0" in the environment file to get this setup work!
 
 ## Installation ##
 ### General###
