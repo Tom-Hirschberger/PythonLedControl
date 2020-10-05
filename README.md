@@ -21,7 +21,7 @@ This example uses the GPIO21. 10, 12 and 18 are supported, also.
 
 ![Wiring WS2813](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS2813.png "Wiring WS2813")
 
-### Wiring WS281X (except WS2813)###
+### Wiring WS281X (except WS2813) ###
 This example uses the GPIO21. 10, 12 and 18 are supported, also.
 
 ![Wiring WS281X](https://github.com/Tom-Hirschberger/PythonLedControl/raw/master/ledcontrol-WS281X.png "Wiring WS281X")
@@ -42,7 +42,7 @@ This setup is more robust against influnces of other electronical devices like f
 
 You need to set "LED_BTN_TRIGGER_ON_HIGH=0" in the environment file to get this setup work!
 
-### Wiring the Buttons with pull-up resistors and capacitors###
+### Wiring the Buttons with pull-up resistors and capacitors ###
 GPIO pins do not have an inital default state. To get one we connect an resistor to the VCC and to the pin. The GPIO then is high and will be set to low if the switch is pressed and the connection to the ground pin is closed.
 
 This setup is more robust against influnces of other electronical devices like frigerators or microwaves than the one which only uses pull-up resistors.
