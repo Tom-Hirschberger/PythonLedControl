@@ -118,6 +118,8 @@ Open the file /home/pi/ledcontrol/ledcontrol.env in your favorit editor. In exam
     LED_BTN_TWO_GPIO=27
     #How many milliseconds should be waited before another press of the same button is accepted?
     LED_BTN_DEBOUNCE_DELAY=300
+    #Should the button be triggerd on a high (default) or low value of the gpio
+    LED_BTN_TRIGGER_ON_HIGH=1
 
     #How many leds does the connected led stripe have?
     LED_MAX_LEDS=160

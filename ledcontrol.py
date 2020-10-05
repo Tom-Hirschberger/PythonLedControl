@@ -25,6 +25,7 @@ DEFAULT_NUM_PONG_LEDS=10
 DEFAULT_BTN_ONE_GPIO=17
 DEFAULT_BTN_TWO_GPIO=27
 DEFAULT_BTN_DEBOUNCE_DELAY=300
+DEFAULT_BTN_TRIGGER_ON_HIGH=True
 DEFAULT_PONG_BTN_DELAY=2.0
 DEFAULT_PONG_MAX_WINS=2
 DEFAULT_PONG_TOLERANCE=2
@@ -106,6 +107,7 @@ def get_board_pin(gpio_nr):
 btn_one_gpio = sys_var_to_var("LED_BTN_ONE_GPIO", DEFAULT_BTN_ONE_GPIO)
 btn_two_gpio = sys_var_to_var("LED_BTN_TWO_GPIO", DEFAULT_BTN_TWO_GPIO)
 btn_debounce = sys_var_to_var("LED_BTN_DEBOUNCE_DELAY", DEFAULT_BTN_DEBOUNCE_DELAY)
+btn_trigger_on_high = sys_var_to_var("LED_BTN_TRIGGER_ON_HIGH", DEFAULT_BTN_TRIGGER_ON_HIGH)
 
 reverse_mode = False
 cur_pixel = 0
@@ -641,8 +643,13 @@ signal.signal(signal.SIGTERM, do_cleanup)
 GPIO.setup(btn_one_gpio, GPIO.IN)
 GPIO.setup(btn_two_gpio, GPIO.IN)
 
-GPIO.add_event_detect(btn_one_gpio, GPIO.RISING, callback=callback_one, bouncetime = btn_debounce)
-GPIO.add_event_detect(btn_two_gpio, GPIO.RISING, callback=callback_two, bouncetime = btn_debounce)
+if btn_trigger_on_high == True:
+    trigger_on = GPIO.RISING
+else:
+    trigger_on = GPIO.FALLING
+
+GPIO.add_event_detect(btn_one_gpio, trigger_on, callback=callback_one, bouncetime = btn_debounce)
+GPIO.add_event_detect(btn_two_gpio, trigger_on, callback=callback_two, bouncetime = btn_debounce)
 
 #only if mqtt should be used we activate the clients
 if mqtt_active:
