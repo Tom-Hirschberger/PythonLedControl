@@ -46,6 +46,7 @@ DEFAULT_COLOR_B=255
 DEFAULT_PUBLISH_STATUS_AFTER_EVERY_CONFIG_CHANGE=False
 DEFAULT_PUBLISH_STATUS_IF_TOGGLED=True
 DEFAULT_PUBLISH_STATUS_AT_START=True
+DEFAULT_BLACK_COLOR_REFRESH_INTERVAL=30
 
 #set the gpio mode to use the gpio numbering and not the pin numbering
 GPIO.setmode(GPIO.BCM)
@@ -123,11 +124,14 @@ stripe_on = False
 color_r = sys_var_to_var("LED_COLOR_R",DEFAULT_COLOR_R)
 color_g = sys_var_to_var("LED_COLOR_G",DEFAULT_COLOR_G)
 color_b = sys_var_to_var("LED_COLOR_B",DEFAULT_COLOR_B)
+black_color_refresh_interval = sys_var_to_var("LED_BLACK_COLOR_REFRESH_INTERVAL",DEFAULT_BLACK_COLOR_REFRESH_INTERVAL)
+last_black_color_refresh = -1
 
 
 pong_init_delay = sys_var_to_var("LED_PONG_INIT_DELAY", DEFAULT_PONG_INIT_LED_DELAY)
 cur_pong_delay = pong_init_delay
 num_pong_leds = sys_var_to_var("LED_PONG_NUM_LEDS", DEFAULT_NUM_PONG_LEDS)
+print("num_pong_leds %d, default_val %d" %(num_pong_leds, DEFAULT_NUM_PONG_LEDS))
 pong_max_wins = sys_var_to_var("LED_PONG_MAX_WINS", DEFAULT_PONG_MAX_WINS)
 pong_wins_delay_during = sys_var_to_var("LED_PONG_RESULT_DELAY_DURING", DEFAULT_PONG_RESULT_DELAY_DURING)
 pong_wins_delay_after = sys_var_to_var("LED_PONG_RESULT_DELAY_AFTER", DEFAULT_PONG_RESULT_DELAY_AFTER)
@@ -469,6 +473,7 @@ def toggle_leds(to_state = None):
         stripe_on = False
 
     pixels.show()
+    last_black_color_refresh = time.time()
 
     if state_changed and publish_status_if_toggled:
         publish_current_status()
@@ -670,6 +675,12 @@ try:
             if btn_one_state == True:
                 btn_one_state = False
                 toggle_leds()
+
+            if not stripe_on:
+                cur_time = time.time()
+                if (cur_time - last_black_color_refresh) > black_color_refresh_interval:
+                    last_black_color_refresh = cur_time
+                    pixels.show()
         #pong mode
         elif stripe_mode == 1:
             #black out all pixels and change only the pixel of the current one to the pong color value

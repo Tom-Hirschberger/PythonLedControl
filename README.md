@@ -161,6 +161,9 @@ Open the file /home/pi/ledcontrol/ledcontrol.env in your favorit editor. In exam
     LED_COLOR_R=255
     LED_COLOR_G=255
     LED_COLOR_B=255
+
+    #If the led strip is shut off the state needs the be refreshed periodically at some led strips. The interval is set in seconds. Use a number smaller than 1 to deactivate this feature.
+    LED_BLACK_COLOR_REFRESH_INTERVAL=30
     
     #Which color should be used for the pong running light?
     LED_PONG_COLOR_R=0
